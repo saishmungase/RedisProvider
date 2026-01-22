@@ -1,0 +1,4 @@
+/orchestrator/node_modules/
+/orchestrator/dist
+/orchestrator/redis-manager/node_modules
+/orchestrator/redis-manager/build
