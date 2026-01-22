@@ -12,6 +12,7 @@
   "type": "module",
   "dependencies": {
     "@types/dockerode": "^4.0.1",
+    "crypto": "^1.0.1",
     "dockerode": "^4.0.9"
   }
 }
