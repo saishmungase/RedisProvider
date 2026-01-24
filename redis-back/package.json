@@ -1,0 +1,16 @@
+{
+  "name": "redis-back",
+  "version": "1.0.0",
+  "workspaces":[
+    "business-layer",
+    "service-layer"
+  ],
+  "description": "The single source of codebase for the redisService backend",
+  "license": "ISC",
+  "author": "saish",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
