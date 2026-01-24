@@ -3,3 +3,4 @@
 /redis-back/business-layer/.env
 /redis-back/service-layer/node_modules
 /redis-back/service-layer/build
+/redis-back/node_modules
