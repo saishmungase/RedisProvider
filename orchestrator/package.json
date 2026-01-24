@@ -4,9 +4,17 @@
   "description": "This contains all the application logic",
   "license": "ISC",
   "author": "saish",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "@upstash/redis": "^1.36.1",
+    "express": "^5.2.1",
+    "fastforwardit": "^1.0.1",
+    "uuid": "^13.0.0",
+    "zod": "^4.3.6"
   }
 }
