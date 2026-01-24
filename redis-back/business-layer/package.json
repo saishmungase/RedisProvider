@@ -1,5 +1,5 @@
 {
-  "name": "business-layer",
+  "name": "@redis/business",
   "version": "1.0.0",
   "description": "This contains all the application logic",
   "license": "ISC",
@@ -10,6 +10,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@redis/service": "*",
     "@types/express": "^5.0.6",
     "@upstash/redis": "^1.36.1",
     "express": "^5.2.1",
