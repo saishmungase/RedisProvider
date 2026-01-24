@@ -13,7 +13,7 @@ export const mailVarification = async (email : string) => {
             text: `$Hey Your Verficiation Code is ${id}`
         });
 
-        await redis.hset("auth", { email :  id } );
+        await redis.hset("auth", { [email]: id });
     } catch (error) {
         console.log("Error While Sending Mail");
         return { status : "error-mail", message : "Error while sending Mail" }
