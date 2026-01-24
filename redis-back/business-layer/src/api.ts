@@ -1,26 +1,27 @@
 import express from 'express';
-import { email, z } from 'zod'
+import { z } from 'zod'
 import { mailVarification } from './mail.js';
-import { validate } from 'uuid';
+import { createInstance } from "@redis/service/root/manager.js"
 import { validateCode } from './db.js';
+import type { Request, Response, NextFunction } from 'express';
 
 export const app = express();
 
 const mailSchema = z.object({
-  email : z.email
+  email : z.string().email()
 });
 
 const signUpSchema = z.object({
-  name : z.string,
-  age : z.number,
-  email : z.email,
-  password : z.string,
-  passcode : z.string
-})
+  name: z.string(),
+  age: z.number(),
+  email: z.string().email(),
+  password: z.string().min(8),
+  passcode: z.string()
+});
 
 const signInSchema = z.object({
-  email : z.email,
-  password : z.string
+  email : z.string().email(),
+  password : z.string()
 })
 
 app.use(express.json());
@@ -30,17 +31,17 @@ app.use(express.json());
 - signup (✅)
 - signin (✅)
 - signout (✅)
-- create instance
-- fetch instaces
-- fetch instance 
+- create instance (✅)
+- fetch instaces => Will Create After DB SETUP
+- fetch instance => Will Create After DB SETUP
   ( usage, date )
-- fetch instance data ( hashMaps & queues )
+- fetch instance data ( hashMaps & queues ) => Will Create After DB SETUP
 
 */
 
-const verifyToken = (req : , res, next) => {
-  const {toekn} = req.body;
-  console.log("Verfying Token.....")
+const verifyToken = (req : Request, res : Response, next : NextFunction) => {
+  const {token} = req.body;
+  console.log("Verfying Token....." + token)
   next();
 }
 
@@ -73,7 +74,7 @@ app.post("/signup", async (req, res) => {
     
 })
 
-app.post("/varified-signup", (req, res) => {
+app.post("/varified-signup", async (req, res) => {
 
   const data = req.body; 
 
@@ -89,11 +90,9 @@ app.post("/varified-signup", (req, res) => {
 
   const {name, age, email, password, passcode} = data;
 
-  if(!validateCode({ code : passcode, email })){
-    return res.send({
-      status : 400,
-      message : "Please Enter a Valid PassCode"
-    })
+  const isValid = await validateCode({ code: passcode, email });
+  if(!isValid){
+    return res.status(400).send({ message: "Invalid PassCode" });
   }
 
   console.log("DatBase will be integrated soon, For right now Data Saved Successfully")
@@ -121,18 +120,26 @@ app.post("/login", (req, res) => {
 })
 
 
-// app.post("/createInstance", verifyToken, async (req, res) => {
-//   const userData = req.body
-//   const { id, email, name } = userData;
+app.post("/createInstance", verifyToken, async (req, res) => {
+  const userData = req.body
+  const { id, email, name } = userData;
 
-//   try {
+  try {
 
-//     const instance = createInstance({ userId : id, userName : name })
+    const { userId, containerId, port, password } = await createInstance({ userId : id, userName : name })
 
-//     console.log("Updating User Data On The DB ( " + id + ", " + email + " )")
-
-//   } catch (error) {
+    console.log("Saving User Data To the Database")
     
-//   }
-  
-// })
+    return res.send({
+      status : 200,
+      message : "Redis Instance Has Been Saved Successfully!"
+    })
+
+  } catch (error) {
+    console.log( "Erro While Creating a Job:- " + error)
+    return res.send({
+      status : 500,
+      message : "Internal Server Error !"
+    })
+  }
+})
