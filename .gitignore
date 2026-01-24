@@ -2,3 +2,4 @@
 /orchestrator/dist
 /orchestrator/redis-manager/node_modules
 /orchestrator/redis-manager/build
+/orchestrator/.env
