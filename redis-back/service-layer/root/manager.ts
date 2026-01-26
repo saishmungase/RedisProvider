@@ -3,7 +3,7 @@ import crypto from "crypto";
 
 const manager = new Docker();
 
-const RANGE = { startPort: 7000, endPort: 7050 };
+const RANGE = { startPort: 7000, endPort: 7012 };
 
 const getAvailablePort = async () => {
   const containers = await manager.listContainers({ all: true });
@@ -18,7 +18,8 @@ const getAvailablePort = async () => {
   for (let port = RANGE.startPort; port <= RANGE.endPort; port++) {
     if (!takenPorts.has(port)) return port;
   }
-  throw new Error("No available ports in range");
+
+  return -1;
 };
 
 export const deleteContainer = async (containerId: string) => {
@@ -35,32 +36,68 @@ export const deleteContainer = async (containerId: string) => {
 export const createInstance = async (props: { userId: string, userName: string }) => {
   const { userId, userName } = props;
   const port = await getAvailablePort();
+  if(port == -1){
+    return {
+      userId,
+      status : 429,
+      containerId: null,
+      port,
+      username: null,
+      password: null
+    };
+  }
+  const clientUser = `user_${String(userId).slice(0, 8)}`; 
   const password = crypto.randomBytes(16).toString("hex");
 
-  const container : Container = await manager.createContainer({
+const container: Container = await manager.createContainer({
     Image: "redis:alpine",
     Cmd: [
       "redis-server",
-      "--requirepass", password,
-      "--maxmemory", "100mb",
-      "--maxmemory-policy", "allkeys-lru"
+      "--requirepass", crypto.randomBytes(32).toString("hex"),
+      "--maxmemory", "12mb",
+      "--maxmemory-policy", "allkeys-lru", 
+      "--save", "",
+      "--appendonly", "no"
     ],
     ExposedPorts: { "6379/tcp": {} },
     HostConfig: {
       PortBindings: { "6379/tcp": [{ HostPort: String(port) }] },
-      Memory: 128 * 1024 * 1024,
-      NanoCpus: 500_000_000,
-      PidsLimit: 100,
+      Memory: 16 * 1024 * 1024,
+      MemorySwap: 16 * 1024 * 1024,
+      NanoCpus: 50_000_000,
+      PidsLimit: 10
     },
     Labels: { owner: userName, ownerId: userId }
   });
 
   await container.start();
 
+  const aclCmd = [
+    "redis-cli", 
+    "ACL", "SETUSER", clientUser, 
+    "on", 
+    `>${password}`, 
+    "~*",
+    "+@all",
+    "-@admin",
+    "-@dangerous",
+    "+ping"
+  ];
+
+  const exec = await container.exec({
+    Cmd: aclCmd,
+    AttachStdout: true,
+    AttachStderr: true
+  });
+
+  await exec.start({});
+
   return {
     userId,
+    status : 200,
     containerId: container.id,
     port,
-    password
+    username: clientUser,
+    password: password
   };
 };
