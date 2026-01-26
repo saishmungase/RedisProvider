@@ -96,8 +96,8 @@ const container: Container = await manager.createContainer({
     userId,
     status : 200,
     containerId: container.id,
-    port,
+    assignedPort : port,
     username: clientUser,
-    password: password
+    redisPassword: password
   };
 };
