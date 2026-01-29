@@ -1,5 +1,6 @@
-import Docker, { Container } from "dockerode";
+import Docker from "dockerode";
 import crypto from "crypto";
+import pool from "@redis/business/src/db/index.js"
 
 const manager = new Docker();
 
@@ -15,10 +16,15 @@ const getAvailablePort = async () => {
     });
   });
 
+  const dbResult = await pool.query('SELECT port FROM instances');
+  dbResult.rows.forEach(row => {
+    takenPorts.add(row.port);
+  });
+
   for (let port = RANGE.startPort; port <= RANGE.endPort; port++) {
     if (!takenPorts.has(port)) return port;
   }
-
+  
   return -1;
 };
 
@@ -49,11 +55,16 @@ export const createInstance = async (props: { userId: string, userName: string }
   const clientUser = `user_${String(userId).slice(0, 8)}`; 
   const password = crypto.randomBytes(16).toString("hex");
 
-const container: Container = await manager.createContainer({
-    Image: "redis:alpine",
+  const ownerId = String(userId);
+  const ownerName = String(userName);
+
+  const redisRootPassword = "Mungase@123";
+
+  const container = await manager.createContainer({
+    Image: "redis:7-alpine",
     Cmd: [
       "redis-server",
-      "--requirepass", crypto.randomBytes(32).toString("hex"),
+      "--requirepass", redisRootPassword,
       "--maxmemory", "12mb",
       "--maxmemory-policy", "allkeys-lru", 
       "--save", "",
@@ -62,26 +73,27 @@ const container: Container = await manager.createContainer({
     ExposedPorts: { "6379/tcp": {} },
     HostConfig: {
       PortBindings: { "6379/tcp": [{ HostPort: String(port) }] },
-      Memory: 16 * 1024 * 1024,
-      MemorySwap: 16 * 1024 * 1024,
-      NanoCpus: 50_000_000,
-      PidsLimit: 10
+      Memory: 32 * 1024 * 1024,
+      MemorySwap: 32 * 1024 * 1024,
+      NanoCpus: 100_000_000,
+      PidsLimit: 20
     },
-    Labels: { owner: userName, ownerId: userId }
+    Labels: { owner: ownerName, ownerId: ownerId }
   });
 
   await container.start();
 
+  await new Promise(r => setTimeout(r, 3000));
+
   const aclCmd = [
-    "redis-cli", 
-    "ACL", "SETUSER", clientUser, 
-    "on", 
-    `>${password}`, 
+    "redis-cli",
+    "-a", redisRootPassword,
+    "ACL", "SETUSER", clientUser,
+    "ON",
+    `>${password}`,
     "~*",
-    "+@all",
-    "-@admin",
-    "-@dangerous",
-    "+ping"
+    "+@read", "+@write", "+@string", "+@hash", "+@list", "+@set", "+@sortedset", "+@bitmap",
+    "-@admin", "-@dangerous", "-@connection"
   ];
 
   const exec = await container.exec({
@@ -90,7 +102,23 @@ const container: Container = await manager.createContainer({
     AttachStderr: true
   });
 
-  await exec.start({});
+  const stream = await exec.start({});
+
+  await new Promise((resolve, reject) => {
+    let output = '';
+    stream.on("data", (chunk: Buffer) => {
+      output += chunk.toString();
+      console.log(chunk.toString());
+    });
+    stream.on("end", () => {
+      if (output.includes("ERR")) {
+        reject(new Error(`ACL setup failed: ${output}`));
+      } else {
+        resolve(output);
+      }
+    });
+    stream.on("error", reject);
+  });
 
   return {
     userId,
