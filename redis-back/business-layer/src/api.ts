@@ -8,7 +8,7 @@ import pool from './db/index.js';
 import bcrypt from "bcrypt";
 import type { JwtPayload } from 'jsonwebtoken'
 import jwt from 'jsonwebtoken'
-import { createInstanceQuery, isUserExist, isUserExistByEmail, loginQuery, signUpQuery } from './db/queries.js';
+import { createInstanceQuery, fetchActives, fetchInstances, isUserExist, isUserExistByEmail, loginQuery, signUpQuery } from './db/queries.js';
 
 export const app = express();
 
@@ -28,6 +28,12 @@ const signInSchema = z.object({
   email : z.string().email(),
   password : z.string()
 })
+
+type instance = {
+  port : number, 
+  status : string, 
+  date : Date
+}
 
 const saltRounds : number = Number(process.env.SHIFT)
 const secret = process.env.SECRET
@@ -137,7 +143,7 @@ app.post("/signup", async (req, res) => {
 })
 
 app.post("/verified-signup", async (req, res) => {
-
+  
   const data = req.body; 
 
   const parseResult = signUpSchema.safeParse(data);
@@ -243,8 +249,7 @@ app.post("/createInstance", verifyToken, async (req, res) => {
   const { userId, name } = req.user!;
 
   try {
-
-    const { status, containerId, assignedPort, redisPassword } = await createInstance({ userId, userName : name })
+    const { username, status, containerId, assignedPort, redisPassword } = await createInstance({ userId, userName : name })
 
     if(status != 200){
       return res.status(status).send({
@@ -258,7 +263,7 @@ app.post("/createInstance", verifyToken, async (req, res) => {
     
     return res.status(200).send({
       data : {
-        id, port, password, instanceUSER
+        id, port, username, password, instanceUSER
       },
       message : "Redis Instance Has Been Saved Successfully!"
     })
@@ -266,7 +271,56 @@ app.post("/createInstance", verifyToken, async (req, res) => {
   } catch (error) {
     console.log( "Erro While Creating a Job:- " + error)
     return res.status(500).send({
-      message : "Internal Server Error !"
+      message : "Internal Server Error!"
+    })
+  }
+})
+
+
+app.get("/used-instance", async (req, res) => {
+  try {
+    const active_data = await pool.query(fetchActives);
+
+    const active_instances = active_data.rows;
+
+    res.status(200).send({
+      message : "Active Instances Fetched Successfully.",
+      instance : active_instances
+    })
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      message : "Error While Fetching Active Instances"
+    })
+  }
+})
+
+app.get("/fetch-instances", verifyToken, async (req, res) => {
+  const userId  = req.user?.userId;
+
+  try {
+    const data = await pool.query(fetchInstances, [userId]);
+    const containers = data.rows;
+
+    let instances: instance[] = [];
+
+    containers.forEach((container) => {
+      instances.push({
+        port: container.port,
+        status: container.status,
+        date: container.createdat
+      });
+    });
+
+    res.status(200).send({
+      message: "Fetched Instances Successfully!",
+      instances
+    });
+
+  } catch (error) {
+    console.error(error)
+    res.status(500).send({
+      message : "Error While Fetching Instances"
     })
   }
 })
