@@ -1,6 +1,7 @@
 /redis-back/business-layer/node_modules/
 /redis-back/business-layer/dist
-/redis-back/business-layer/.env
+/redis-back/.env
 /redis-back/service-layer/node_modules
 /redis-back/service-layer/build
 /redis-back/node_modules
+/redis-test
