@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod'
 import { mailVarification } from './mail.js';
-import { createInstance } from "@redis/service/root/manager.js"
+import { createInstance, redisCommand } from "@redis/service/root/manager.js"
 import { validateCode } from './db.js';
 import type { Request, Response, NextFunction } from 'express';
 import pool from './db/index.js';
@@ -37,6 +37,7 @@ type instance = {
 
 const saltRounds : number = Number(process.env.SHIFT)
 const secret = process.env.SECRET
+const admin_pass = process.env.ADMIN_PASS || ""
 
 if (!secret) {
   throw new Error("JWT_SECRET not defined");
@@ -293,6 +294,15 @@ app.get("/used-instance", async (req, res) => {
       message : "Error While Fetching Active Instances"
     })
   }
+})
+
+app.get("/instance-data", verifyToken, async (req, res) => {
+  const instance = await req.body;
+  const instaceId = instance.instanceId;
+  const data = await redisCommand(instaceId, admin_pass, ["INFO", "memory"]);
+  res.status(200).send({
+    data : data
+  })
 })
 
 app.get("/fetch-instances", verifyToken, async (req, res) => {
