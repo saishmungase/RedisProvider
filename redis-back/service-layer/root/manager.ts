@@ -6,6 +6,40 @@ const manager = new Docker();
 
 const RANGE = { startPort: 7000, endPort: 7012 };
 
+const REDIS_OVERHEAD_BYTES = 1.14 * 1024 * 1024;
+const USER_ALLOCATED_BYTES = 12 * 1024 * 1024;
+
+const RELEVANT_KEYS = new Set([
+  "used_memory",
+  "used_memory_rss",
+  "used_memory_peak",
+  "used_memory_peak_perc",
+  "total_system_memory",
+  "maxmemory",
+  "maxmemory_policy",
+  "mem_fragmentation_ratio",
+]);
+
+const BYTE_KEYS = new Set([
+  "used_memory",
+  "used_memory_rss",
+  "used_memory_peak",
+  "total_system_memory",
+  "maxmemory",
+]);
+
+function bytesToReadable(bytes: number): string {
+  if (bytes <= 0) return "0 B";
+  const KB = 1024;
+  const MB = KB * 1024;
+  const GB = MB * 1024;
+
+  if (bytes >= GB) return (bytes / GB).toFixed(2) + " GB";
+  if (bytes >= MB) return (bytes / MB).toFixed(2) + " MB";
+  if (bytes >= KB) return (bytes / KB).toFixed(2) + " KB";
+  return bytes + " B";
+}
+
 const getAvailablePort = async () => {
   const containers = await manager.listContainers({ all: true });
   const takenPorts = new Set<number>();
@@ -58,7 +92,7 @@ export const createInstance = async (props: { userId: string, userName: string }
   const ownerId = String(userId);
   const ownerName = String(userName);
 
-  const redisRootPassword = "Mungase@123";
+  const redisRootPassword = process.env.ADMIN_PASS || "Mungase@123";
 
   const container = await manager.createContainer({
     Image: "redis:7-alpine",
@@ -88,12 +122,18 @@ export const createInstance = async (props: { userId: string, userName: string }
   const aclCmd = [
     "redis-cli",
     "-a", redisRootPassword,
+    "--no-auth-warning",
     "ACL", "SETUSER", clientUser,
-    "ON",
+    "on",
     `>${password}`,
     "~*",
-    "+@read", "+@write", "+@string", "+@hash", "+@list", "+@set", "+@sortedset", "+@bitmap",
-    "-@admin", "-@dangerous", "-@connection"
+    "+@all",
+    "-@admin",
+    "-@dangerous",
+    "-@scripting",
+    "+FLUSHALL", 
+    "+FLUSHDB",
+    "+ping" 
   ];
 
   const exec = await container.exec({
@@ -129,3 +169,74 @@ export const createInstance = async (props: { userId: string, userName: string }
     redisPassword: password
   };
 };
+
+export function parseRedisMemoryInfo(raw: string) {
+  const result: Record<string, string | number> = {};
+  let rawUsedMemory = 0;
+
+  const lines = raw
+    .split("\n")
+    .map((line) => line.replace(/[^\x20-\x7E\n\r]/g, "").trim())
+    .filter((line) => {
+      const colonIndex = line.indexOf(":");
+      if (colonIndex <= 0 || line.startsWith("#")) return false;
+      const key = line.substring(0, colonIndex).trim();
+      return RELEVANT_KEYS.has(key);
+    });
+
+  for (const line of lines) {
+    const colonIndex = line.indexOf(":");
+    const key = line.substring(0, colonIndex).trim();
+    const value = line.substring(colonIndex + 1).trim();
+
+    if (key === "used_memory") {
+      rawUsedMemory = Number(value);
+      const userUsed = Math.max(0, rawUsedMemory - REDIS_OVERHEAD_BYTES);
+      result[key] = bytesToReadable(userUsed);
+    } else if (key === "maxmemory") {
+      result[key] = bytesToReadable(USER_ALLOCATED_BYTES);
+    } else if (BYTE_KEYS.has(key)) {
+      result[key] = bytesToReadable(Number(value));
+    } else if (key === "mem_fragmentation_ratio") {
+      result[key] = Number(value);
+    } else {
+      result[key] = value;
+    }
+  }
+
+  const userUsed = Math.max(0, rawUsedMemory - REDIS_OVERHEAD_BYTES);
+  result.remain_memory = bytesToReadable(USER_ALLOCATED_BYTES - userUsed);
+
+  return result;
+}
+
+export const redisCommand = async (containerId: string, admin_pass: string, command: string[]) => {
+  const container = manager.getContainer(containerId);
+
+  const exec = await container.exec({
+    Cmd: [
+      "redis-cli",
+      "-a", admin_pass,
+      ...command
+    ],
+    AttachStdout : true,
+    AttachStderr : true
+  })
+
+  const stream = await exec.start({});
+
+  return new Promise((resolve, reject)=>{
+    let data ="";
+    stream.on("data", (chunk : Buffer) => {
+      console.log(chunk.toString())
+      data += chunk.toString();
+    })
+    stream.on("end", ()=>{
+      resolve(parseRedisMemoryInfo(data));
+    })
+    stream.on("error", ()=>{
+      const error = new Error("Error While Fetching From Streams.")
+      reject(error)
+    })
+  })
+}
