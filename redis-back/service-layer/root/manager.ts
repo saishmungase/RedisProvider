@@ -6,7 +6,8 @@ const manager = new Docker();
 
 const RANGE = { startPort: 7000, endPort: 7012 };
 
-const REDIS_OVERHEAD_BYTES = 1.14 * 1024 * 1024;
+const admin_pass = process.env.ADMIN_PASS || "";
+
 const USER_ALLOCATED_BYTES = 12 * 1024 * 1024;
 
 const RELEVANT_KEYS = new Set([
@@ -50,7 +51,7 @@ const getAvailablePort = async () => {
     });
   });
 
-  const dbResult = await pool.query('SELECT port FROM instances');
+  const dbResult = await pool.query("SELECT port FROM instances WHERE status = 'RUNNING'");
   dbResult.rows.forEach(row => {
     takenPorts.add(row.port);
   });
@@ -92,14 +93,14 @@ export const createInstance = async (props: { userId: string, userName: string }
   const ownerId = String(userId);
   const ownerName = String(userName);
 
-  const redisRootPassword = process.env.ADMIN_PASS || "Mungase@123";
+  const redisRootPassword = admin_pass || "Mungase@123";
 
   const container = await manager.createContainer({
     Image: "redis:7-alpine",
     Cmd: [
       "redis-server",
       "--requirepass", redisRootPassword,
-      "--maxmemory", "12mb",
+      "--maxmemory", "14mb",
       "--maxmemory-policy", "allkeys-lru", 
       "--save", "",
       "--appendonly", "no"
@@ -160,19 +161,41 @@ export const createInstance = async (props: { userId: string, userName: string }
     stream.on("error", reject);
   });
 
+  const memExec = await container.exec({
+    Cmd: ["redis-cli", "-a", redisRootPassword, "INFO", "memory"],
+    AttachStdout: true,
+    AttachStderr: true
+  });
+
+  const memStream = await memExec.start({});
+  const rawInfo = await new Promise<string>((resolve, reject) => {
+    let data = "";
+    memStream.on("data", (chunk) => data += chunk.toString());
+    memStream.on("end", () => resolve(data));
+    memStream.on("error", reject);
+  });
+
+  const match = rawInfo.match(/used_memory:(\d+)/);
+  const overhead = match ? parseInt(match[1], 10) : 0;
+
   return {
     userId,
     status : 200,
     containerId: container.id,
     assignedPort : port,
     username: clientUser,
-    redisPassword: password
+    redisPassword: password,
+    overhead : overhead
   };
 };
 
-export function parseRedisMemoryInfo(raw: string) {
+export async function parseRedisMemoryInfo(raw: string, containerId : string) {
   const result: Record<string, string | number> = {};
   let rawUsedMemory = 0;
+
+  const data = await pool.query("SELECT overhead FROM Instances WHERE containerId = $1", [containerId])
+  const REDIS_OVERHEAD_BYTES = data.rows[0].overhead || 1.14 * 1024 * 1024;
+  console.log(REDIS_OVERHEAD_BYTES)
 
   const lines = raw
     .split("\n")
@@ -203,7 +226,7 @@ export function parseRedisMemoryInfo(raw: string) {
       result[key] = value;
     }
   }
-
+  console.log(rawUsedMemory)
   const userUsed = Math.max(0, rawUsedMemory - REDIS_OVERHEAD_BYTES);
   result.remain_memory = bytesToReadable(USER_ALLOCATED_BYTES - userUsed);
 
@@ -232,7 +255,7 @@ export const redisCommand = async (containerId: string, admin_pass: string, comm
       data += chunk.toString();
     })
     stream.on("end", ()=>{
-      resolve(parseRedisMemoryInfo(data));
+      resolve(parseRedisMemoryInfo(data, containerId));
     })
     stream.on("error", ()=>{
       const error = new Error("Error While Fetching From Streams.")
