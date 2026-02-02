@@ -250,7 +250,7 @@ app.post("/createInstance", verifyToken, async (req, res) => {
   const { userId, name } = req.user!;
 
   try {
-    const { username, status, containerId, assignedPort, redisPassword } = await createInstance({ userId, userName : name })
+    const { username, status, containerId, assignedPort, redisPassword, overhead } = await createInstance({ userId, userName : name })
 
     if(status != 200){
       return res.status(status).send({
@@ -258,7 +258,7 @@ app.post("/createInstance", verifyToken, async (req, res) => {
       })
     }
 
-    const saving = await pool.query(createInstanceQuery, [containerId, assignedPort, redisPassword, userId]);
+    const saving = await pool.query(createInstanceQuery, [containerId, assignedPort, redisPassword, userId, overhead]);
 
     const { id, port, password, instanceUSER } = saving.rows[0]
     
@@ -297,8 +297,12 @@ app.get("/used-instance", async (req, res) => {
 })
 
 app.get("/instance-data", verifyToken, async (req, res) => {
-  const instance = await req.body;
-  const instaceId = instance.instanceId;
+  const container = await req.body;
+
+  const containerId = container.containerId;
+
+  const val = await pool.query("SELECT containerId FROM instances WHERE id = $1", [containerId])
+  const instaceId = val.rows[0].containerid
   const data = await redisCommand(instaceId, admin_pass, ["INFO", "memory"]);
   res.status(200).send({
     data : data
