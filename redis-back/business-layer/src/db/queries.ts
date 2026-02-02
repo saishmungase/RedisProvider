@@ -9,7 +9,7 @@ export const isUserExist  = `SELECT id, email FROM users WHERE id = $1`
 export const loginQuery = `SELECT id, password, firstname FROM users WHERE email = $1`
 
 export const createInstanceQuery = `
-  INSERT INTO instances (containerId, port, password, instanceUSER) VALUES ($1, $2, $3, $4)
+  INSERT INTO instances (containerId, port, password, instanceUSER, overhead) VALUES ($1, $2, $3, $4, $5)
   RETURNING id, port, password, instanceUSER;
 `
 
