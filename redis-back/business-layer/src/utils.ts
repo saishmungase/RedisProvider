@@ -1,5 +1,6 @@
 import { app } from "./api.js";
 import { Redis } from '@upstash/redis'
+import { cleanup } from "./cron.js";
 
 const port = process.env.PORT;  
 const url = process.env.REDIS_REST_URL
@@ -9,6 +10,8 @@ export const redis = new Redis({
   url,
   token,
 })
+
+cleanup()
 
 app.listen(port, () => {
     console.log("API LAYER IS UP & RUNNING.....")
