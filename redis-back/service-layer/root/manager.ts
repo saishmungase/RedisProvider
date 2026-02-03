@@ -1,6 +1,7 @@
 import Docker from "dockerode";
 import crypto from "crypto";
 import pool from "@redis/business/src/db/index.js"
+import cron from "node-cron";
 
 const manager = new Docker();
 
@@ -21,6 +22,8 @@ const RELEVANT_KEYS = new Set([
   "mem_fragmentation_ratio",
 ]);
 
+const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+
 const BYTE_KEYS = new Set([
   "used_memory",
   "used_memory_rss",
@@ -40,6 +43,31 @@ function bytesToReadable(bytes: number): string {
   if (bytes >= KB) return (bytes / KB).toFixed(2) + " KB";
   return bytes + " B";
 }
+
+cron.schedule('*/10 * * * *', async () => {
+  console.log("🔄 Running cleanup job for expired containers...");
+  try {
+    const containers = await manager.listContainers({ all: true });
+
+    for (const containerInfo of containers) {
+      const createdAtStr = containerInfo.Labels['created_at'];
+      
+      if (createdAtStr) {
+        const createdAt = parseInt(createdAtStr, 10);
+        const age = Date.now() - createdAt;
+        if (age > MAX_AGE_MS) {
+          console.log(`🗑️ Container ${containerInfo.Id.slice(0, 8)} is expired (${(age/3600000).toFixed(1)}h old). Deleting...`);
+          await deleteContainer(containerInfo.Id);
+          console.log("Container Deletion with containerId:- ", containerInfo.Id)
+          await pool.query("UPDATE instances SET status = 'STOPPED'")
+          console.log("Update In Database for containerId:- ", containerInfo.Id)
+        }
+      }
+    }
+  } catch (error) {
+    console.error("❌ Cleanup job failed:", error);
+  }
+});
 
 const getAvailablePort = async () => {
   const containers = await manager.listContainers({ all: true });
@@ -67,7 +95,7 @@ export const deleteContainer = async (containerId: string) => {
   try {
     const container = manager.getContainer(containerId);
     await container.stop().catch(() => {});
-    await container.remove({ force: true });
+    await container.remove({ force: true, v: true });
     console.log(`Container ${containerId} deleted.`);
   } catch (e) {
     console.error("Deletion failed:", e);
@@ -113,7 +141,7 @@ export const createInstance = async (props: { userId: string, userName: string }
       NanoCpus: 100_000_000,
       PidsLimit: 20
     },
-    Labels: { owner: ownerName, ownerId: ownerId }
+    Labels: { owner: ownerName, ownerId: ownerId, created_at: Date.now().toString() }
   });
 
   await container.start();
@@ -149,7 +177,6 @@ export const createInstance = async (props: { userId: string, userName: string }
     let output = '';
     stream.on("data", (chunk: Buffer) => {
       output += chunk.toString();
-      console.log(chunk.toString());
     });
     stream.on("end", () => {
       if (output.includes("ERR")) {
@@ -195,7 +222,6 @@ export async function parseRedisMemoryInfo(raw: string, containerId : string) {
 
   const data = await pool.query("SELECT overhead FROM Instances WHERE containerId = $1", [containerId])
   const REDIS_OVERHEAD_BYTES = data.rows[0].overhead || 1.14 * 1024 * 1024;
-  console.log(REDIS_OVERHEAD_BYTES)
 
   const lines = raw
     .split("\n")
@@ -226,7 +252,6 @@ export async function parseRedisMemoryInfo(raw: string, containerId : string) {
       result[key] = value;
     }
   }
-  console.log(rawUsedMemory)
   const userUsed = Math.max(0, rawUsedMemory - REDIS_OVERHEAD_BYTES);
   result.remain_memory = bytesToReadable(USER_ALLOCATED_BYTES - userUsed);
 
@@ -251,7 +276,6 @@ export const redisCommand = async (containerId: string, admin_pass: string, comm
   return new Promise((resolve, reject)=>{
     let data ="";
     stream.on("data", (chunk : Buffer) => {
-      console.log(chunk.toString())
       data += chunk.toString();
     })
     stream.on("end", ()=>{
