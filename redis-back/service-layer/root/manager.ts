@@ -41,15 +41,24 @@ function bytesToReadable(bytes: number): string {
   return bytes + " B";
 }
 
-const getAvailablePort = async () => {
-  const containers = await manager.listContainers({ all: true });
+const getAvailablePort = async (userMail : string) => {
+  const containers = await getAllContainers();
   const takenPorts = new Set<number>();
+  if(!containers) return -1;
 
-  containers.forEach(container => {
-    container.Ports.forEach(port => {
-      if (port.PublicPort) takenPorts.add(port.PublicPort);
-    });
-  });
+  for (const container of containers) {
+    const info = container.Labels?.owner;
+
+    if (info === userMail) {
+      return -99; 
+    }
+
+    for (const port of container.Ports) {
+      if (port.PublicPort) {
+        takenPorts.add(port.PublicPort);
+      }
+    }
+  }
 
   const dbResult = await pool.query("SELECT port FROM instances WHERE status = 'RUNNING'");
   dbResult.rows.forEach(row => {
@@ -85,7 +94,7 @@ export const getAllContainers = async () => {
 
 export const createInstance = async (props: { userId: string, userMail: string }) => {
   const { userId, userMail } = props;
-  const port = await getAvailablePort();
+  const port = await getAvailablePort(userMail);
   if(port == -1){
     return {
       userId,
@@ -96,6 +105,18 @@ export const createInstance = async (props: { userId: string, userMail: string }
       password: null
     };
   }
+
+  if(port == -99){
+    return {
+      userId,
+      status : 403,
+      containerId: null,
+      port,
+      username: null,
+      password: null
+    };
+  }
+
   const clientUser = `user_${String(userId).slice(0, 8)}`; 
   const password = crypto.randomBytes(16).toString("hex");
 

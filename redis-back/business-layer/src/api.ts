@@ -251,6 +251,12 @@ app.post("/createInstance", verifyToken, async (req, res) => {
 
   try {
     const { username, status, containerId, assignedPort, redisPassword, overhead } = await createInstance({ userId, userMail : email })
+    console.log(status)
+    if(status == 403){
+      return res.status(403).send({
+        message : "You Can Have At Max One Instance Per Account"
+      })
+    }
 
     if(status != 200){
       return res.status(status).send({
