@@ -4,13 +4,57 @@ import pool from "./db/index.js";
 
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
-export const cleanup = () => cron.schedule('*/30 * * * *', async () => {
+export const autoSync = async (containers) => {
+
+  const result = await pool.query(
+    "SELECT containerId FROM instances WHERE status = 'RUNNING'"
+  );
+
+  const dbRows = result.rows;
+
+  const dockerSet = new Set();
+  const dbSet = new Set();
+
+  for (const c of containers) {
+    dockerSet.add(c.Id);
+  }
+
+  for (const row of dbRows) {
+    dbSet.add(row.containerid);
+  }
+
+  for (const c of containers) {
+    if (!dbSet.has(c.Id)) {
+      await deleteContainer(c.Id);
+    }
+  }
+
+  const toDelete = [];
+
+  for (const id of dbSet) {
+    if (!dockerSet.has(id)) {
+      toDelete.push(id);
+    }
+  }
+
+  if (toDelete.length > 0) {
+    await pool.query(
+      "UPDATE instances SET status = 'STOPPED' WHERE containerId = ANY($1)",
+      [toDelete]
+    );
+  }
+};
+
+
+export const cleanup = async () => cron.schedule('*/30 * * * *', async () => {
   console.log("🔄 Running cleanup job for expired containers...");
   try {
 
     const containers = await getAllContainers();
 
     if(!containers) return;
+    
+    await autoSync(containers)
 
     for (const containerInfo of containers) {
       const createdAtStr = containerInfo.Labels['created_at'];
@@ -31,6 +75,7 @@ export const cleanup = () => cron.schedule('*/30 * * * *', async () => {
         }
       }
     }
+
   } catch (error) {
     console.error("❌ Cleanup job failed:", error);
   }

@@ -1,6 +1,6 @@
 import { app } from "./api.js";
 import { Redis } from '@upstash/redis'
-import { cleanup } from "./cron.js";
+import { cleanup } from "./cleaner.js";
 
 const port = process.env.PORT;  
 const url = process.env.REDIS_REST_URL
