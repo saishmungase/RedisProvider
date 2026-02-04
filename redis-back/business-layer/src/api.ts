@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod'
 import { mailVarification } from './mail.js';
-import { createInstance, redisCommand } from "@redis/service/root/manager.js"
+import { createInstance, deleteContainer, redisCommand } from "@redis/service/root/manager.js"
 import { validateCode } from './db.js';
 import type { Request, Response, NextFunction } from 'express';
 import pool from './db/index.js';
@@ -292,6 +292,52 @@ app.get("/used-instance", async (req, res) => {
     console.error(error);
     res.status(500).send({
       message : "Error While Fetching Active Instances"
+    })
+  }
+})
+
+app.delete("/delete-instance", verifyToken, async (req, res) => {
+  const { userId, name } = req.user!;
+  const { instanceId } = req.body;
+  
+  if (!instanceId) {
+    return res.status(400).json({
+      message: "instanceId is required"
+    });
+  }
+  
+  try {
+    const privilege = await pool.query("SELECT instanceUSER, containerId FROM instances WHERE id = $1 AND status = 'RUNNING'", [instanceId])
+    const privilegeUser = privilege.rows[0].instanceuser;
+    const containerId = privilege.rows[0].containerid;
+
+    if(userId != privilegeUser){
+      return res.status(403).send({
+        message : "You Do Not Have Access To this Instance!"
+      })
+    }
+
+    if(!containerId){
+      return res.status(404).send({
+        message : "Unable to Find the Instance"
+      })
+    }
+    await deleteContainer(containerId);
+
+    await pool.query(
+      "UPDATE instances SET status = 'STOPPED' WHERE id = $1",
+      [instanceId]
+    );
+
+    console.log("Deleted Container On " + name + "'s Request.("+containerId+")");
+
+    res.status(200).send({
+      message : "Instance has been deleted Successfully."
+    })
+  } catch (error) {
+    console.log("Error While Deleting Container:- ", error);
+    res.status(500).send({
+      message : "Internel Server Error"
     })
   }
 })
