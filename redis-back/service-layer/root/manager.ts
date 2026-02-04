@@ -83,8 +83,8 @@ export const getAllContainers = async () => {
   }
 }
 
-export const createInstance = async (props: { userId: string, userName: string }) => {
-  const { userId, userName } = props;
+export const createInstance = async (props: { userId: string, userMail: string }) => {
+  const { userId, userMail } = props;
   const port = await getAvailablePort();
   if(port == -1){
     return {
@@ -100,7 +100,7 @@ export const createInstance = async (props: { userId: string, userName: string }
   const password = crypto.randomBytes(16).toString("hex");
 
   const ownerId = String(userId);
-  const ownerName = String(userName);
+  const ownerMail = String(userMail);
 
   const redisRootPassword = admin_pass || "Mungase@123";
 
@@ -122,7 +122,7 @@ export const createInstance = async (props: { userId: string, userName: string }
       NanoCpus: 100_000_000,
       PidsLimit: 20
     },
-    Labels: { owner: ownerName, ownerId: ownerId, created_at: Date.now().toString() }
+    Labels: { owner: ownerMail, ownerId: ownerId, created_at: Date.now().toString() }
   });
 
   await container.start();

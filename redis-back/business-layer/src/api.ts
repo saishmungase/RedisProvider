@@ -247,10 +247,10 @@ app.post("/login", async (req, res) => {
 
 
 app.post("/createInstance", verifyToken, async (req, res) => {
-  const { userId, name } = req.user!;
+  const { userId, email } = req.user!;
 
   try {
-    const { username, status, containerId, assignedPort, redisPassword, overhead } = await createInstance({ userId, userName : name })
+    const { username, status, containerId, assignedPort, redisPassword, overhead } = await createInstance({ userId, userMail : email })
 
     if(status != 200){
       return res.status(status).send({
@@ -297,7 +297,7 @@ app.get("/used-instance", async (req, res) => {
 })
 
 app.delete("/delete-instance", verifyToken, async (req, res) => {
-  const { userId, name } = req.user!;
+  const { userId, email } = req.user!;
   const { instanceId } = req.body;
   
   if (!instanceId) {
@@ -329,7 +329,7 @@ app.delete("/delete-instance", verifyToken, async (req, res) => {
       [instanceId]
     );
 
-    console.log("Deleted Container On " + name + "'s Request.("+containerId+")");
+    console.log("Deleted Container On " + email + "'s Request.("+containerId+")");
 
     res.status(200).send({
       message : "Instance has been deleted Successfully."
