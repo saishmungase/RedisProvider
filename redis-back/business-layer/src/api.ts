@@ -74,12 +74,19 @@ const verifyToken = async (req : Request, res : Response, next : NextFunction) =
   const authHeader = req.headers.authorization;
 
   if (!authHeader)
-    return res.status(401).send({ message: "No token provided" });
+    return res.status(401).send({ 
+      message: "No token provided", 
+      description: "Guess who's gonna lose their job today? Our frontend intern. They forgot to send the token! 🥳" 
+    });
 
   const token = authHeader.split(" ")[1];
-  if(!token){
-    return res.status(401).send({ message: "No token provided" });
+  if (!token) {
+    return res.status(401).send({ 
+      message: "No token provided", 
+      description: "Guess who's gonna lose their job today? Our frontend intern. They forgot to send the token! 🥳" 
+    });
   }
+
   try {
     const decoded = jwt.verify(
       token,
@@ -93,7 +100,8 @@ const verifyToken = async (req : Request, res : Response, next : NextFunction) =
 
     if (result.rows.length === 0) {
       return res.status(401).send({
-        message: "Invalid email or password"
+        message: "Invalid email or password",
+        description : "Whoa there! I don't recognize your face (or your token). You're trying to get into the VIP lounge with a library card. Go back to login before the bouncers notice."
       });
     }
 
@@ -105,7 +113,7 @@ const verifyToken = async (req : Request, res : Response, next : NextFunction) =
 
     next();
   } catch (err) {
-    return res.status(401).send({ message: "Invalid token" });
+    return res.status(500).send({ message: "Invalid token", description : "Smells like our server is leaking! (Backstage: Saish! Bring some duct tape and a bucket, the middleware is dripping again!)" });
   }
 }
 
@@ -115,7 +123,8 @@ app.post("/signup", async (req, res) => {
 
     if(!parseResult.success){
       res.status(400).send({
-        message : "Invalid Credentials"
+        message : "Invalid Credentials",
+        description : "Come on, it's a single email field. Even a keyboard-smashing cat could get closer than this."
       });
       return;
     }
@@ -125,7 +134,8 @@ app.post("/signup", async (req, res) => {
 
     if (existing.rows.length > 0) {
       return res.status(409).send({
-        message: "User already exists"
+        message: "User already exists",
+        description : "Wait... haven't we met before? Your email is already in my database. Either you have a twin, or you’re already signed up. Try logging in instead!"
       });
     }
 
@@ -133,12 +143,13 @@ app.post("/signup", async (req, res) => {
 
     if(mailState.status == "error-mail"){
       return res.status(400).send({
-        message : "Error While Sending Code, Please Try Later or use different mail id"
+        message : "Error While Sending Code, Please Try Later or use different email",
+        description : "The carrier pigeon carrying your verification code got distracted by breadcrumbs. Try again, or use an email that doesn't scare my mail server."
       })
     }
 
     return res.status(200).send({
-      message : "Code is Being Shared To Your Mail Id Please Check!"
+      message : "Code is Being Shared To Your email Please Check!"
     })
     
 })
@@ -151,7 +162,8 @@ app.post("/verified-signup", async (req, res) => {
 
   if(!parseResult.success){
     res.status(400).send({
-      message : "Invalid Credentials"
+      message : "Invalid Credentials",
+      description : "In case you don't know that i will tell you that you can also use your documents to fill these fields."
     });
     return;
   }
@@ -160,7 +172,7 @@ app.post("/verified-signup", async (req, res) => {
 
   const isValid = await validateCode({ code: passcode, email });
   if(!isValid){
-    return res.status(400).send({ message: "Invalid PassCode" });
+    return res.status(400).send({ message: "Invalid PassCode", description : "Either you messed up the passcode or we sent it to Mama Coco. Check your inbox again, carefully this time!" });
   }
 
   const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -192,7 +204,8 @@ app.post("/verified-signup", async (req, res) => {
   } catch (error) {
     console.log(error)
     return res.status(500).send({
-      message : "Unable to Store User To Database!"
+      message : "Unable to Store User To Database!",
+      description : "The server is showing some attitude and refusing to store your data. (Backstage: Hey Intern, tell Saish to grab a slipper. Let’s give this server some 'Asian treatment'.)"
     })
   }
 })
@@ -202,7 +215,8 @@ app.post("/login", async (req, res) => {
   const parseResult = signInSchema.safeParse(data);
   if (!parseResult.success) {
     return res.status(400).send({
-      message: "Invalid credentials"
+      message: "Invalid credentials",
+      description : "Are we having an identity crisis? Try to remember which version of you created this account. Should I play Taylor Swift or Phonk for you to figure it out?"
     });
   }
 
@@ -213,7 +227,8 @@ app.post("/login", async (req, res) => {
 
   if (result.rows.length === 0) {
     return res.status(401).send({
-      message: "Invalid email or password"
+      message: "Invalid email or password",
+      description : "Are we having an identity crisis? Try to remember which version of you created this account. Should I play Taylor Swift or Phonk while you to figure it out?"
     });
   }
 
@@ -224,7 +239,8 @@ app.post("/login", async (req, res) => {
 
   if (!verfication) {
     return res.status(401).send({
-      message: "Invalid email or password"
+      message: "Invalid email or password",
+      description : "Are we having an identity crisis? Try to remember which version of you created this account. Should I play Taylor Swift or Phonk while you to figure it out?"
     });
   }
 
@@ -254,7 +270,8 @@ app.post("/createInstance", verifyToken, async (req, res) => {
     console.log(status)
     if(status == 403){
       return res.status(403).send({
-        message : "You Can Have At Max One Instance Per Account"
+        message : "You Can Have At Max One Instance Per Account",
+        description : "Easy there, big spender! One free instance is the limit. My server is running on a prayer and half a potato—don't push your luck."
       })
     }
 
@@ -278,7 +295,8 @@ app.post("/createInstance", verifyToken, async (req, res) => {
   } catch (error) {
     console.log( "Erro While Creating a Job:- " + error)
     return res.status(500).send({
-      message : "Internal Server Error!"
+      message : "Internal Server Error!",
+      description : "The container manager failed to start. Saish has motion sickness and we sent him inside a giant fish (I think they call it 'Docker')."
     })
   }
 })
@@ -297,69 +315,82 @@ app.get("/used-instance", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).send({
-      message : "Error While Fetching Active Instances"
+      message : "Error While Fetching Active Instances",
+      description: "Elephants are the cutest animals in the world and usually very playful—unlike our elephant, Postgres. He's currently being rude and refusing to fetch your data. (Backstage: Is Saish there? Tell him the elephant is acting up again. Should we replace him with a Dolphin or a Leaf?)"
     })
   }
 })
 
 app.delete("/delete-instance", verifyToken, async (req, res) => {
-  const { userId, email } = req.user!;
+  const { userId } = req.user!;
   const { instanceId } = req.body;
   
   if (!instanceId) {
     return res.status(400).json({
-      message: "instanceId is required"
+      message: "instanceId is required",
+      description: "Holy Moly, we don't know what to delete. I guess our frontend team is in the garden touching grass again."
     });
   }
   
   try {
-    const privilege = await pool.query("SELECT instanceUSER, containerId FROM instances WHERE id = $1 AND status = 'RUNNING'", [instanceId])
-    const privilegeUser = privilege.rows[0].instanceuser;
-    const containerId = privilege.rows[0].containerid;
-
-    if(userId != privilegeUser){
-      return res.status(403).send({
-        message : "You Do Not Have Access To this Instance!"
-      })
-    }
-
-    if(!containerId){
-      return res.status(404).send({
-        message : "Unable to Find the Instance"
-      })
-    }
-    await deleteContainer(containerId);
-
-    await pool.query(
-      "UPDATE instances SET status = 'STOPPED' WHERE id = $1",
+    const privilege = await pool.query(
+      "SELECT instanceUSER, containerId FROM instances WHERE id = $1 AND status = 'RUNNING'", 
       [instanceId]
     );
 
-    console.log("Deleted Container On " + email + "'s Request.("+containerId+")");
+    if (privilege.rows.length === 0) {
+       return res.status(404).send({
+         message: "Unable to Find the Instance",
+         description: "Either this Instance does not exist or we sent it to Antarctica to the penguin who is motivating some kids on social media these days."
+       });
+    }
 
-    res.status(200).send({
-      message : "Instance has been deleted Successfully."
-    })
+    const privilegeUser = privilege.rows[0].instanceuser;
+    const containerId = privilege.rows[0].containerid;
+
+    if (userId != privilegeUser) {
+      return res.status(403).send({
+        message: "Access Denied",
+        description: "HEY! Why are you touching someone else's container? (Backstage: Saish! Lock the door! Someone's trying to break in!)"
+      });
+    }
+
+    await deleteContainer(containerId);
+    await pool.query("UPDATE instances SET status = 'STOPPED' WHERE id = $1", [instanceId]);
+
+    res.status(200).send({ message: "Instance has been deleted successfully." });
   } catch (error) {
-    console.log("Error While Deleting Container:- ", error);
     res.status(500).send({
-      message : "Internel Server Error"
-    })
+      message: "Internal Server Error",
+      description: "I guess there is something wrong from our side. (What, were you expecting a joke? This is serious business!)"
+    });
   }
-})
+});
 
 app.get("/instance-data", verifyToken, async (req, res) => {
-  const container = await req.body;
+  const { containerId } = req.body;
 
-  const containerId = container.containerId;
+  try {
+    const val = await pool.query("SELECT containerId FROM instances WHERE id = $1", [containerId]);
+    
+    if (val.rows.length === 0) {
+      return res.status(404).send({
+        message: "Instance not found",
+        description: "I looked everywhere—under the rug, behind the server rack, even in Saish's lunchbox. This instance doesn't exist."
+      });
+    }
 
-  const val = await pool.query("SELECT containerId FROM instances WHERE id = $1", [containerId])
-  const instaceId = val.rows[0].containerid
-  const data = await redisCommand(instaceId, admin_pass, ["INFO", "memory"]);
-  res.status(200).send({
-    data : data
-  })
-})
+    const instanceId = val.rows[0].containerid;
+    const data = await redisCommand(instanceId, admin_pass, ["INFO", "memory"]);
+    
+    res.status(200).send({ data });
+  } catch (error) {
+    res.status(500).send({
+      message: "Internal Server Error",
+      description: "Saish accidentally plugged the Redis cable into the coffee machine. We're drying it off now."
+    });
+  }
+});
 
 app.get("/fetch-instances", verifyToken, async (req, res) => {
   const userId  = req.user?.userId;
@@ -386,7 +417,8 @@ app.get("/fetch-instances", verifyToken, async (req, res) => {
   } catch (error) {
     console.error(error)
     res.status(500).send({
-      message : "Error While Fetching Instances"
+      message : "Error While Fetching Instances",
+      description : "Oh no. Something behind the scenes just tripped over a power cord. Our servers are currently having a minor identity crisis and think they're toasters. I’m giving them a pep talk and some virtual coffee right now. Refresh the page in a second and act like this never happened!(Backstage: Wait, is the mic still on? I hope the user is gone... Shut off the connection! Saish? Saish!! Get off LeetCode and fix the API! The database is making popcorn noises again and I don't see any corn!)"
     })
   }
 })
