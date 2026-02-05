@@ -5,3 +5,5 @@
 /redis-back/service-layer/build
 /redis-back/node_modules
 /redis-test
+/redis-front/node_modules
+/redis-front/.next/
