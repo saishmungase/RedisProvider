@@ -8,6 +8,7 @@ import pool from './db/index.js';
 import bcrypt from "bcrypt";
 import type { JwtPayload } from 'jsonwebtoken'
 import jwt from 'jsonwebtoken'
+import cors from 'cors'
 import { createInstanceQuery, fetchActives, fetchInstances, isUserExist, isUserExistByEmail, loginQuery, signUpQuery } from './db/queries.js';
 
 export const app = express();
@@ -50,6 +51,7 @@ if (!saltRounds || isNaN(saltRounds)) {
 
 
 app.use(express.json());
+app.use(cors())
 
 /*
 
@@ -120,6 +122,7 @@ const verifyToken = async (req : Request, res : Response, next : NextFunction) =
 app.post("/signup", async (req, res) => {
     const data = req.body; 
     const parseResult = mailSchema.safeParse(data);
+    console.log(data)
 
     if(!parseResult.success){
       res.status(400).send({
