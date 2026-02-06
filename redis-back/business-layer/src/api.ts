@@ -305,7 +305,7 @@ app.post("/createInstance", verifyToken, async (req, res) => {
 })
 
 
-app.get("/used-instance", async (req, res) => {
+app.get("/used-instances", async (req, res) => {
   try {
     const active_data = await pool.query(fetchActives);
 
