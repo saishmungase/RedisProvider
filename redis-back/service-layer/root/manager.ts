@@ -41,6 +41,21 @@ function bytesToReadable(bytes: number): string {
   return bytes + " B";
 }
 
+export const isPortAvailable = async(reqPort : number) => {
+  const containers = await getAllContainers();
+  if(!containers) return false;
+  
+  for (const container of containers) {
+    for (const port of container.Ports) {
+      if (port.PublicPort == reqPort) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 const getAvailablePort = async (userMail : string) => {
   const containers = await getAllContainers();
   const takenPorts = new Set<number>();
@@ -48,6 +63,7 @@ const getAvailablePort = async (userMail : string) => {
 
   for (const container of containers) {
     const info = container.Labels?.owner;
+    console.log(info + " == " + userMail)
 
     if (info === userMail) {
       return -99; 
@@ -92,9 +108,13 @@ export const getAllContainers = async () => {
   }
 }
 
-export const createInstance = async (props: { userId: string, userMail: string }) => {
-  const { userId, userMail } = props;
-  const port = await getAvailablePort(userMail);
+export const createInstance = async (props: { userId: string, userMail: string, userPort? : number }) => {
+  const { userId, userMail, userPort } = props;
+  let port = userPort;
+  if(!port){
+    port = await getAvailablePort(userMail);
+  }
+
   if(port == -1){
     return {
       userId,
@@ -107,6 +127,17 @@ export const createInstance = async (props: { userId: string, userMail: string }
   }
 
   if(port == -99){
+    return {
+      userId,
+      status : 403,
+      containerId: null,
+      port,
+      username: null,
+      password: null
+    };
+  }
+  
+  if(port > 7012 || port < 7000){
     return {
       userId,
       status : 403,

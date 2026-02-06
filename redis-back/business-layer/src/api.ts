@@ -1,7 +1,7 @@
 import express from 'express';
 import { z } from 'zod'
 import { mailVarification } from './mail.js';
-import { createInstance, deleteContainer, redisCommand } from "@redis/service/root/manager.js"
+import { createInstance, deleteContainer, isPortAvailable, redisCommand } from "@redis/service/root/manager.js"
 import { validateCode } from './db.js';
 import type { Request, Response, NextFunction } from 'express';
 import pool from './db/index.js';
@@ -320,6 +320,54 @@ app.get("/used-instances", async (req, res) => {
     res.status(500).send({
       message : "Error While Fetching Active Instances",
       description: "Elephants are the cutest animals in the world and usually very playful—unlike our elephant, Postgres. He's currently being rude and refusing to fetch your data. (Backstage: Is Saish there? Tell him the elephant is acting up again. Should we replace him with a Dolphin or a Leaf?)"
+    })
+  }
+})
+
+app.post("/custom-instance", verifyToken, async(req, res) => {
+  const { userId, email } = req.user!;
+  const { port } = req.body;
+  const isValidPort = await isPortAvailable(port);
+
+  if(!isValidPort){
+    return res.status(409).send({
+      message : "Port Already Occupied",
+      description : "This port already has a roommate. They aren't looking for a third."
+    })
+  }
+  const customePort = port;
+  try {
+    const { username, status, containerId, assignedPort, redisPassword, overhead } = await createInstance({ userId, userMail : email, userPort : customePort })
+    console.log(status)
+    if(status == 403){
+      return res.status(403).send({
+        message : "You Can Have At Max One Instance Per Account",
+        description : "Easy there, big spender! One free instance is the limit. My server is running on a prayer and half a potato—don't push your luck."
+      })
+    }
+
+    if(status != 200){
+      return res.status(status).send({
+        message : "Error While Creating Instance"
+      })
+    }
+
+    const saving = await pool.query(createInstanceQuery, [containerId, assignedPort, redisPassword, userId, overhead]);
+
+    const { id, port, password, instanceUSER } = saving.rows[0]
+    
+    return res.status(200).send({
+      data : {
+        id, port, username, password, instanceUSER
+      },
+      message : "Redis Instance Has Been Saved Successfully!"
+    })
+
+  } catch (error) {
+    console.log( "Erro While Creating a Job:- " + error)
+    return res.status(500).send({
+      message : "Internal Server Error!",
+      description : "The container manager failed to start. Saish has motion sickness and we sent him inside a giant fish (I think they call it 'Docker')."
     })
   }
 })
