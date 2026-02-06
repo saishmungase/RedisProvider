@@ -105,7 +105,7 @@ export default function Home() {
               <span className="text-[10px] text-zinc-500 ml-2 font-mono underline">redis-cli -h snap.redis.io</span>
             </div>
             <div className="p-6 font-mono text-sm space-y-2">
-              <div className="text-zinc-500">$ curl -X POST https://redisnap.io/api/create</div>
+              <div className="text-zinc-500">$ curl -X POST https://QuickDB.io/api/create</div>
               <div className="text-emerald-400">{"{"}</div>
               <div className="text-emerald-400 ml-4">"status": "active",</div>
               <div className="text-emerald-400 ml-4">"host": "snap-node-04.io",</div>
@@ -182,7 +182,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
             <Layers size={18} className="text-red-600" />
-            <span className="font-bold text-white">RediSnap</span>
+            <span className="font-bold text-white">QuickDB</span>
           </div>
           <p className="text-zinc-600 text-xs tracking-wide uppercase font-medium">
             &copy; 2026 Crafted with precision in Pune.

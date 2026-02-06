@@ -1,14 +1,11 @@
-import type { Metadata } from "next";
+'use client'
+
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Database, ChevronRight } from "lucide-react";
+import { redirect } from "next/navigation";
 
 const inter = Inter({ subsets: ["latin"] });
-
-export const metadata: Metadata = {
-  title: "RediSnap | Instant, Ephemeral Redis Instances",
-  description: "Get a production-ready Redis instance in seconds. Active for 24 hours. Perfect for hackathons, testing, and rapid prototyping.",
-};
 
 export default function RootLayout({
   children,
@@ -25,7 +22,7 @@ export default function RootLayout({
               <div className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center">
                 <Database size={18} className="text-white" />
               </div>
-              <span className="font-bold text-xl tracking-tight text-white">RediSnap</span>
+              <span className="font-bold text-xl tracking-tight text-white">QuickDB</span>
             </div>
             
             <div className="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
@@ -36,7 +33,13 @@ export default function RootLayout({
               </a>
             </div>
 
-            <button className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center gap-2">
+            <button 
+            onClick={
+              ()=>{
+                redirect("/auth/signup")
+              }
+            }
+            className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center gap-2">
               Get Started <ChevronRight size={16} />
             </button>
           </div>
