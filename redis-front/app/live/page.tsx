@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { liveFetch } from "../actions/instancefetch";
 import PopUp from "@/components/customPopup";
 
@@ -20,7 +20,7 @@ const Live = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'free' | 'occupied'>('all');
     const [now, setNow] = useState(Date.now());
-    const [popup, setPopup] = useState(true);
+    const [popup, setPopup] = useState(false);
     const [selectedPort, setSelectedPort] = useState<number | undefined>(undefined);
 
     const closePopUp = () => {
