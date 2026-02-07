@@ -1,3 +1,5 @@
+import CustomInstance from "@/app/actions/custominstance";
+import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type PopupType = {
@@ -13,7 +15,7 @@ interface PopUpProps {
   selected?: number
 }
 
-const PopUp = ({ data, onClose, onSubmit, selected }: PopUpProps) => {
+const PopUp = ({ data, onClose, selected }: PopUpProps) => {
   const [selectedPort, setSelectedPort] = useState<PopupType>(
   selected !== undefined
     ? data.find((item) => item.port === selected) ??
@@ -22,8 +24,24 @@ const PopUp = ({ data, onClose, onSubmit, selected }: PopUpProps) => {
     : data.find((item) => !item.isTaken) ?? data[0]
   );
 
+  
+  const onSubmit =  async (port : number) => {
+    setSubmit(true)
+    const token = localStorage.getItem("AuthToken");
+    if(!token || token.length <= 5){
+      redirect("/auth/login")
+    }
+    console.log(token)
+
+    const data = await CustomInstance(port, token);
+    setSubmit(false);
+    onClose();
+    console.log(data)
+  }
+
 
   const [now, setNow] = useState(0);
+  const [submit, setSubmit] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -104,11 +122,11 @@ const PopUp = ({ data, onClose, onSubmit, selected }: PopUpProps) => {
             Cancel
           </button>
           <button 
-            disabled={selectedPort.isTaken}
+            disabled={selectedPort.isTaken || submit}
             onClick={() => onSubmit(selectedPort.port)}
             className="flex-1 py-3.5 px-6 rounded-xl bg-white text-black font-bold hover:bg-gray-200 disabled:opacity-20 disabled:grayscale transition-all active:scale-95"
           >
-            Submit
+            {submit ? "...." : "Submit"}
           </button>
         </div>
       </div>
