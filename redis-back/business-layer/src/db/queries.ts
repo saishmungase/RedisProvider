@@ -32,3 +32,7 @@ SELECT firstname, lastname, createdat FROM USERS WHERE id = $1;
 export const fetchUserInstances = `
 SELECT port, status, createdat FROM INSTANCES WHERE instanceUser = $1;
 `
+
+export const fetchInstance = `
+SELECT password, status, createdat FROM INSTANCES WHERE instanceUser = $1 AND port = $2;
+`

@@ -176,7 +176,7 @@ export const createInstance = async (props: { userId: string, userMail: string, 
     };
   }
 
-  const clientUser = `user_${String(userId).slice(0, 8)}`; 
+  const clientUser = `redisuser`; 
   const password = crypto.randomBytes(16).toString("hex");
 
   const ownerId = String(userId);

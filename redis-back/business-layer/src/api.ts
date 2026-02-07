@@ -9,7 +9,7 @@ import bcrypt from "bcrypt";
 import type { JwtPayload } from 'jsonwebtoken'
 import jwt from 'jsonwebtoken'
 import cors from 'cors'
-import { createInstanceQuery, fetchActives, fetchInstances, fetchUserInstances, fetchUserName, isUserExist, isUserExistByEmail, loginQuery, signUpQuery } from './db/queries.js';
+import { createInstanceQuery, fetchActives, fetchInstance, fetchInstances, fetchUserInstances, fetchUserName, isUserExist, isUserExistByEmail, loginQuery, signUpQuery } from './db/queries.js';
 
 export const app = express();
 
@@ -374,15 +374,26 @@ app.post("/custom-instance", verifyToken, async(req, res) => {
   }
 })
 
+app.get("/get-instance", verifyToken, async (req, res) => {
+  const { userId, email } = req.user!;
+  const port = req.query.port;
+  const instance = await pool.query(fetchInstance, [userId, port])
+  const data = instance.rows[0];
+  if(!data){
+    return res.status(403).send({
+      message : "You Do not have access to this instances"
+    })
+  }
 
-// const USER_DATA = {
-//     name: "John Snow",
-//     activeInstance: { port: 7000, status: "Active", uptime: "12h 30m" },
-//     history: [
-//         { port: 6045, date: "2026-02-01", duration: "24h" },
-//         { port: 6012, date: "2026-01-28", duration: "24h" },
-//     ]
-// };
+  const { password, status, createdat } =  data;
+
+  return res.status(200).send({
+    username : "redisuser",
+    password : password,
+    status : status,
+    createdat : createdat
+  })
+})
 
 app.get("/get-profile", verifyToken, async (req, res) => {
   const { userId, email } = req.user!;
