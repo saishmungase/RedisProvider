@@ -329,6 +329,8 @@ app.post("/custom-instance", verifyToken, async(req, res) => {
   const { port } = req.body;
   const isValidPort = await isPortAvailable(port);
 
+  console.log("Request For Custom Instance By " + email + ", for port:- " + port)
+
   if(!isValidPort){
     return res.status(409).send({
       message : "Port Already Occupied",

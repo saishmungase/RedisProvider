@@ -114,13 +114,41 @@ export const createInstance = async (props: { userId: string, userMail: string, 
   if(!port){
     port = await getAvailablePort(userMail);
   }
+  else{
+    const containers = await getAllContainers();
+    const takenPorts = new Set<number>();
+    if(!containers) return {
+      userId,
+      status : 429,
+      containerId: null,
+      assignedPort : port,
+      username: null,
+      password: null
+    };
+
+    for (const container of containers) {
+      const info = container.Labels?.owner;
+      console.log(info + " == " + userMail)
+
+      if (info === userMail) {
+        return {
+          userId,
+          status : 403,
+          containerId: null,
+          assignedPort : port,
+          username: null,
+          password: null
+        };
+      }
+    }
+  }
 
   if(port == -1){
     return {
       userId,
       status : 429,
       containerId: null,
-      port,
+      assignedPort : port,
       username: null,
       password: null
     };
@@ -131,7 +159,7 @@ export const createInstance = async (props: { userId: string, userMail: string, 
       userId,
       status : 403,
       containerId: null,
-      port,
+      assignedPort : port,
       username: null,
       password: null
     };
@@ -142,7 +170,7 @@ export const createInstance = async (props: { userId: string, userMail: string, 
       userId,
       status : 403,
       containerId: null,
-      port,
+      assignedPort : port,
       username: null,
       password: null
     };
