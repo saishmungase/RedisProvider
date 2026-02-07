@@ -10,14 +10,20 @@ interface PopUpProps {
   data: PopupType[];
   onClose: () => void;
   onSubmit: (port: number) => void;
+  selected?: number
 }
 
-const PopUp = ({ data, onClose, onSubmit }: PopUpProps) => {
+const PopUp = ({ data, onClose, onSubmit, selected }: PopUpProps) => {
   const [selectedPort, setSelectedPort] = useState<PopupType>(
-    data.find((item) => !item.isTaken) || data[0]
+  selected !== undefined
+    ? data.find((item) => item.port === selected) ??
+        data.find((item) => !item.isTaken) ??
+        data[0]
+    : data.find((item) => !item.isTaken) ?? data[0]
   );
 
-  const [now, setNow] = useState(Date.now());
+
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);

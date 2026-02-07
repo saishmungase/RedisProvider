@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { liveFetch } from "../actions/instancefetch";
+import PopUp from "@/components/customPopup";
 
 interface BackendInstance {
     createdat: string;
@@ -19,6 +20,22 @@ const Live = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'free' | 'occupied'>('all');
     const [now, setNow] = useState(Date.now());
+    const [popup, setPopup] = useState(true);
+    const [selectedPort, setSelectedPort] = useState<number | undefined>(undefined);
+
+    const closePopUp = () => {
+        setPopup(false)
+    }
+
+    const submitPopUp = () => {
+        console.log("Pop Up Success !")
+        setPopup(false);
+    }
+
+    const setActivePort = (port: number) => {
+        setSelectedPort(port);
+        setPopup(true);
+    };
 
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
 
@@ -30,7 +47,7 @@ const Live = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                let skeleton: Instance[] = [];
+                const skeleton: Instance[] = [];
                 for (let port = 7000; port <= 7012; port++) {
                     skeleton.push({ port, isTaken: false, expiresAt: 0 });
                 }
@@ -60,7 +77,7 @@ const Live = () => {
         };
 
         fetchData();
-        const poll = setInterval(fetchData, 15000);
+        const poll = setInterval(fetchData, 30000);
         return () => clearInterval(poll);
     }, []);
 
@@ -96,7 +113,7 @@ const Live = () => {
                         {['all', 'free', 'occupied'].map((f) => (
                             <button
                                 key={f}
-                                onClick={() => setFilter(f as any)}
+                                onClick={() => setFilter(f as "all" | "free" | "occupied") }
                                 className={`px-5 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${
                                     filter === f ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'
                                 }`}
@@ -106,7 +123,7 @@ const Live = () => {
                         ))}
                     </div>
                 </div>
-
+                { popup && <PopUp data={instances} selected={selectedPort} onClose={closePopUp} onSubmit={submitPopUp} />}
                 <div className="flex flex-col gap-3">
                     {filteredInstances.map((instance) => (
                         <div 
@@ -144,7 +161,7 @@ const Live = () => {
 
                             <div className="w-full sm:w-auto">
                                 {!instance.isTaken ? (
-                                    <button className="w-full sm:w-32 py-2.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-lg hover:shadow-emerald-500/20">
+                                    <button onClick={()=>setActivePort(instance.port)} className="w-full sm:w-32 py-2.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-lg hover:shadow-emerald-500/20">
                                         Get Instance
                                     </button>
                                 ) : (
