@@ -9,7 +9,7 @@ import bcrypt from "bcrypt";
 import type { JwtPayload } from 'jsonwebtoken'
 import jwt from 'jsonwebtoken'
 import cors from 'cors'
-import { createInstanceQuery, fetchActives, fetchInstances, isUserExist, isUserExistByEmail, loginQuery, signUpQuery } from './db/queries.js';
+import { createInstanceQuery, fetchActives, fetchInstances, fetchUserInstances, fetchUserName, isUserExist, isUserExistByEmail, loginQuery, signUpQuery } from './db/queries.js';
 
 export const app = express();
 
@@ -372,6 +372,51 @@ app.post("/custom-instance", verifyToken, async(req, res) => {
       description : "The container manager failed to start. Saish has motion sickness and we sent him inside a giant fish (I think they call it 'Docker')."
     })
   }
+})
+
+
+// const USER_DATA = {
+//     name: "John Snow",
+//     activeInstance: { port: 7000, status: "Active", uptime: "12h 30m" },
+//     history: [
+//         { port: 6045, date: "2026-02-01", duration: "24h" },
+//         { port: 6012, date: "2026-01-28", duration: "24h" },
+//     ]
+// };
+
+app.get("/get-profile", verifyToken, async (req, res) => {
+  const { userId, email } = req.user!;
+  const user = await pool.query(fetchUserName, [userId])
+  const {firstname, lastname, createdat } = user.rows[0]
+  const instances = await pool.query(fetchUserInstances, [userId]);
+  if(!instances){
+    return res.status(403).send({
+      message : "No Instance Found"
+    })
+  }
+  const rows = instances.rows; 
+  const runningInstance = rows.find(inst => inst.status === 'RUNNING');
+  const remainingInstances = rows.filter(inst => inst.status !== 'RUNNING');
+  let username = "";
+  if(firstname && lastname){
+    username = firstname + " " + lastname
+  }
+  else if(firstname){
+    username = firstname
+  }
+  else if(lastname){
+    username = lastname + " Ji"
+  }
+  else{
+    username = "Sir Ji"
+  }
+
+  return res.status(200).send({
+    name : username,
+    userOnPlatform : createdat,
+    activeInstance : runningInstance,
+    history : remainingInstances
+  })
 })
 
 app.delete("/delete-instance", verifyToken, async (req, res) => {

@@ -24,3 +24,11 @@ SELECT * FROM instances WHERE instanceUSER = $1;
 export const fetchActives = `
 SELECT createdat, port FROM instances WHERE status = 'RUNNING';
 `
+
+export const fetchUserName = `
+SELECT firstname, lastname, createdat FROM USERS WHERE id = $1;
+`
+
+export const fetchUserInstances = `
+SELECT port, status, createdat FROM INSTANCES WHERE instanceUser = $1;
+`
