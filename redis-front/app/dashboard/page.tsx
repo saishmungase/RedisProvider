@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import fetchUser from "../actions/fetchprofile";
+import { redirect } from "next/navigation";
 
 interface Instance {
     port: number;
@@ -16,7 +17,7 @@ interface ProfileData {
     history: Instance[];
 }
 
-const UserDashboard = ({ onSelectInstance }: { onSelectInstance: (inst: Instance) => void }) => {
+const UserDashboard = () => {
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -72,7 +73,9 @@ const UserDashboard = ({ onSelectInstance }: { onSelectInstance: (inst: Instance
                     <h3 className="text-zinc-600 text-[10px] uppercase font-bold tracking-widest mb-4">Current Session</h3>
                     {profile.activeInstance ? (
                         <div 
-                            onClick={() => onSelectInstance(profile.activeInstance!)}
+                            onClick={() =>{
+                                redirect("/dashboard/instance/"+profile.activeInstance?.port)
+                            } }
                             className="group bg-[#0A0A0A] border border-zinc-800 p-8 rounded-[2.5rem] cursor-pointer hover:border-emerald-500/50 transition-all flex flex-col md:flex-row justify-between items-center"
                         >
                             <div className="flex items-center gap-8">
