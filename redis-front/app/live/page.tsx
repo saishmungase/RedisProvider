@@ -4,12 +4,12 @@ import { useEffect, useState, useMemo } from "react";
 import { liveFetch } from "../actions/instancefetch";
 import PopUp from "@/components/customPopup";
 
-interface BackendInstance {
+export interface BackendInstance {
     createdat: string;
     port: number;
 }
 
-interface Instance {
+export interface Instance {
     port: number;
     isTaken: boolean;
     expiresAt: number;
