@@ -200,7 +200,14 @@ export const createInstance = async (props: { userId: string, userMail: string, 
       Memory: 32 * 1024 * 1024,
       MemorySwap: 32 * 1024 * 1024,
       NanoCpus: 100_000_000,
-      PidsLimit: 20
+      PidsLimit: 20,
+      LogConfig: {
+      Type: "json-file",
+      Config: {
+        "max-size": "9m",
+        "max-file": "3"
+      }
+  }
     },
     Labels: { owner: ownerMail, ownerId: ownerId, created_at: Date.now().toString() }
   });
