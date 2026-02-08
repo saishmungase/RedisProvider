@@ -70,8 +70,15 @@ const UserDashboard = () => {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = localStorage.getItem('AuthToken') || "d"
+                const token = localStorage.getItem('AuthToken')
+                if(!token){
+                    redirect("/auth/login")
+                }
                 const data = await fetchUser(token);
+                
+                if(data.status != 200){
+                    redirect("/auth/signup")
+                }
 
                 if (data) {
                     setProfile(data);
@@ -98,7 +105,10 @@ const UserDashboard = () => {
 
     const randomInstance = async () => {
         setRandomPort(true)
-        const token = localStorage.getItem("AuthToken") || ""
+        const token = localStorage.getItem("AuthToken")
+        if(!token){
+            redirect("/auth/login")
+        }
         const data = await RandomInstance(token)
         const { port } = data;
         setRandomPort(false)

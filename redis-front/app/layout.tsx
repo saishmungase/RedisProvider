@@ -36,7 +36,7 @@ useEffect(() => {
               <a href="/#features" className="hover:text-white transition-colors">Features</a>
               <a href="/#contact" className="hover:text-white transition-colors">Support</a>
               <a href="/live" className="hover:text-white transition-colors flex items-center gap-1">
-                Live Ports <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-[10px]">12 Free</span>
+                Live Ports <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-[10px]">13 Free</span>
               </a>
             </div>
             {

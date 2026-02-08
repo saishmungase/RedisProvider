@@ -13,12 +13,12 @@ import {
   Mail,
   MessageSquare
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-black selection:bg-red-500/30">
       
-      {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-6 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-red-600/10 blur-[120px] rounded-full -z-10" />
         <div className="max-w-4xl mx-auto text-center">
@@ -38,9 +38,9 @@ export default function Home() {
             <span className="text-white font-medium"> &lt;2 seconds</span>. Active for 24 hours, perfect for testing and prototyping.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button className="w-full sm:w-auto bg-white text-black px-8 py-4 rounded-xl font-bold hover:scale-105 transition-transform flex items-center justify-center gap-2">
+            <Link href="/dashboard" className="w-full sm:w-auto bg-white text-black px-8 py-4 rounded-xl font-bold hover:scale-105 transition-transform flex items-center justify-center gap-2">
               Start Automating <Zap size={18} fill="currentColor" />
-            </button>
+            </Link>
             <button className="w-full sm:w-auto bg-zinc-900 border border-white/10 text-white px-8 py-4 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2">
               <Play size={18} fill="currentColor" /> Watch Demo
             </button>
@@ -54,7 +54,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Features Grid */}
       <section id="features" className="py-20 px-6 max-w-6xl mx-auto">
         <div className="grid md:grid-cols-3 gap-6">
           <FeatureCard 
@@ -75,7 +74,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Terminal Section */}
       <section className="py-20 px-6 bg-zinc-950/50 border-y border-white/5">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div>
@@ -119,7 +117,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Built By Section - Compact Image Layout */}
       <section id="contact" className="py-20 px-6 bg-zinc-950/50 border-t border-white/5">
         <div className="max-w-5xl mx-auto">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -177,7 +174,6 @@ export default function Home() {
         </div>
       </section>
     
-      {/* Footer */}
       <footer className="py-12 px-6 border-t border-white/5">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
@@ -193,7 +189,6 @@ export default function Home() {
   );
 }
 
-// Components
 function FeatureCard({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
   return (
     <div className="p-8 rounded-3xl bg-zinc-900/30 border border-white/5 hover:border-red-500/30 transition-all group text-white">
