@@ -2,6 +2,7 @@
 
 import { reqSignup } from "@/app/actions/signup";
 import { verfiedSignup } from "@/app/actions/verifiedsignup";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { useState, useEffect } from "react"
 
@@ -169,6 +170,7 @@ const SignUp = () => {
                             <a className="text-[0.8rem] text-gray-300" href="/auth/signup">change mail?</a>
                         </>
                         :
+                        <>
                         <button
                             disabled={reqLoad}
                             className="cursor-pointer flex items-center justify-center h-10 px-4 bg-black border-2 border-white text-white font-bold rounded"
@@ -186,6 +188,8 @@ const SignUp = () => {
                         >
                             { !reqLoad ? "Request" : "....."}
                         </button>
+                        <Link href={"/auth/login"}>Login?</Link>
+                        </>
                 }
             </section>
         </div>
