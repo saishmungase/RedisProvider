@@ -34,5 +34,13 @@ SELECT port, status, createdat FROM INSTANCES WHERE instanceUser = $1;
 `
 
 export const fetchInstance = `
-SELECT password, status, createdat FROM INSTANCES WHERE instanceUser = $1 AND port = $2;
+SELECT containerId, password, status, createdat FROM INSTANCES WHERE instanceUser = $1 AND port = $2 AND status = 'RUNNING';
+`
+
+export const privilegeCheck = `
+SELECT id, instanceUSER, containerId FROM INSTANCES WHERE port = $1 AND status = 'RUNNING';
+`
+
+export const setStopped = `
+UPDATE instances SET status = 'STOPPED' WHERE id = $1;
 `
