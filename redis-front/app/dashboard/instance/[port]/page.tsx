@@ -62,7 +62,10 @@ const InstanceDetail = ({ onBack }: InstanceDetailProps) => {
     useEffect(() => {
         const fetchData = async () => {
             const token = localStorage.getItem("AuthToken");
-            if (!token) return;
+            
+            if(!token || token.length <= 5){
+              redirect("/auth/login")
+            }
 
             const response: InstanceResponse | null = await fetchInstance(port, token);
             if(response?.status != "200"){

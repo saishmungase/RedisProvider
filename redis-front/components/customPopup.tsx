@@ -36,7 +36,7 @@ const PopUp = ({ data, onClose, selected }: PopUpProps) => {
     const data = await CustomInstance(port, token);
     setSubmit(false);
     onClose();
-    console.log(data)
+    redirect(`/dashboard/instance/${data.port}`)
   }
 
 

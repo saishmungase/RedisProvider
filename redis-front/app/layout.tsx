@@ -23,7 +23,6 @@ useEffect(() => {
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-black text-white antialiased`}>
-        {/* Navigation - Global for all pages */}
         <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-5xl">
           <div className="bg-zinc-900/50 backdrop-blur-md border border-white/10 px-6 py-3 rounded-full flex items-center justify-between">
             <div className="flex items-center gap-2">
