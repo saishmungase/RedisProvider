@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import fetchInstance, { InstanceResponse, RedisMetrics } from '@/app/actions/fetchinstance';
 import { redirect, useParams, useRouter } from 'next/navigation';
+import deleteInstance from '@/app/actions/deleteInstance';
 
 interface LanguageConfig {
     install: string;
@@ -108,12 +109,8 @@ const InstanceDetail = ({ onBack }: InstanceDetailProps) => {
         setIsDeleting(true);
         
         try {
-            const token = localStorage.getItem("AuthToken");
-            const res = await fetch(`http://localhost:3000/delete-instance`, { 
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json', 'authorization': token || '' },
-                body: JSON.stringify({ port })
-            });
+            const token = localStorage.getItem("AuthToken") || "";
+            const res = await deleteInstance(token, port)
 
             if (res.ok) {
                 router.push("/dashboard"); 
