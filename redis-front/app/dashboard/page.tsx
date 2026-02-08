@@ -18,7 +18,7 @@ interface ProfileData {
     name: string;
     userOnPlatform: string;
     activeInstance: Inst | null;
-    history: Instance[];
+    history: Inst[];
 }
 
 const UserDashboard = () => {
