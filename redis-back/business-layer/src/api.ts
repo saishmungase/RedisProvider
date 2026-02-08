@@ -9,7 +9,7 @@ import bcrypt from "bcrypt";
 import type { JwtPayload } from 'jsonwebtoken'
 import jwt from 'jsonwebtoken'
 import cors from 'cors'
-import { createInstanceQuery, fetchActives, fetchInstance, fetchInstances, fetchUserInstances, fetchUserName, isUserExist, isUserExistByEmail, loginQuery, signUpQuery } from './db/queries.js';
+import { createInstanceQuery, fetchActives, fetchInstance, fetchInstances, fetchUserInstances, fetchUserName, isUserExist, isUserExistByEmail, loginQuery, privilegeCheck, setStopped, signUpQuery } from './db/queries.js';
 
 export const app = express();
 
@@ -378,12 +378,24 @@ app.get("/get-instance", verifyToken, async (req, res) => {
   const { userId, email } = req.user!;
   const port = req.query.port;
   const instance = await pool.query(fetchInstance, [userId, port])
+
+  if (instance.rows.length === 0) {
+    return res.status(404).send({
+      message: "Instance not found",
+      description: "I looked everywhere—under the rug, behind the server rack, even in Saish's lunchbox. This instance doesn't exist."
+    });
+  }
+
   const data = instance.rows[0];
+
   if(!data){
     return res.status(403).send({
       message : "You Do not have access to this instances"
     })
   }
+
+  const { containerid } = data;
+  const info = await redisCommand(containerid, admin_pass, ["INFO", "memory"]);
 
   const { password, status, createdat } =  data;
 
@@ -391,7 +403,8 @@ app.get("/get-instance", verifyToken, async (req, res) => {
     username : "redisuser",
     password : password,
     status : status,
-    createdat : createdat
+    createdat : createdat,
+    data : info
   })
 })
 
@@ -432,19 +445,19 @@ app.get("/get-profile", verifyToken, async (req, res) => {
 
 app.delete("/delete-instance", verifyToken, async (req, res) => {
   const { userId } = req.user!;
-  const { instanceId } = req.body;
+  const { port } = req.body;
   
-  if (!instanceId) {
+  if (!port) {
     return res.status(400).json({
-      message: "instanceId is required",
+      message: "port is required",
       description: "Holy Moly, we don't know what to delete. I guess our frontend team is in the garden touching grass again."
     });
   }
   
   try {
     const privilege = await pool.query(
-      "SELECT instanceUSER, containerId FROM instances WHERE id = $1 AND status = 'RUNNING'", 
-      [instanceId]
+      privilegeCheck, 
+      [port]
     );
 
     if (privilege.rows.length === 0) {
@@ -456,6 +469,7 @@ app.delete("/delete-instance", verifyToken, async (req, res) => {
 
     const privilegeUser = privilege.rows[0].instanceuser;
     const containerId = privilege.rows[0].containerid;
+    const id = privilege.rows[0].id;
 
     if (userId != privilegeUser) {
       return res.status(403).send({
@@ -465,7 +479,7 @@ app.delete("/delete-instance", verifyToken, async (req, res) => {
     }
 
     await deleteContainer(containerId);
-    await pool.query("UPDATE instances SET status = 'STOPPED' WHERE id = $1", [instanceId]);
+    await pool.query(setStopped, [id]);
 
     res.status(200).send({ message: "Instance has been deleted successfully." });
   } catch (error) {
@@ -524,10 +538,5 @@ app.get("/fetch-instances", verifyToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error)
-    res.status(500).send({
-      message : "Error While Fetching Instances",
-      description : "Oh no. Something behind the scenes just tripped over a power cord. Our servers are currently having a minor identity crisis and think they're toasters. I’m giving them a pep talk and some virtual coffee right now. Refresh the page in a second and act like this never happened!(Backstage: Wait, is the mic still on? I hope the user is gone... Shut off the connection! Saish? Saish!! Get off LeetCode and fix the API! The database is making popcorn noises again and I don't see any corn!)"
-    })
   }
 })
