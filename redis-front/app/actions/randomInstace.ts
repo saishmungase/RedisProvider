@@ -1,12 +1,15 @@
 
 const RandomInstance = async (token : string) => {
 
-    const customInstance = await fetch("http://localhost:3000/createInstance", {
+    const randomInstance = await fetch("http://localhost:3000/createInstance", {
         method : "POST",
         headers: { "Content-Type": "application/json", "authorization" : token },
     })
 
-    const data = await customInstance.json();
+    const data = await randomInstance.json();
+    
+    const status = randomInstance.status;
+    data['status'] = status;
 
     return data
 }

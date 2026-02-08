@@ -10,7 +10,10 @@ const CustomInstance = async (port : number, token : string) => {
     })
 
     const data = await customInstance.json();
-
+    
+    const status = customInstance.status;
+    data['status'] = status;
+    
     return data
 
 }

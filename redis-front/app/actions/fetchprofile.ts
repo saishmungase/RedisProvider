@@ -10,6 +10,9 @@ const fetchUser = async (token : string) => {
     });
 
     const data = await response.json();
+    
+    const status = response.status;
+    data['status'] = status;
 
     return data
 }

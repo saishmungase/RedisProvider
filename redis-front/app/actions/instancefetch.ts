@@ -6,5 +6,9 @@ export const liveFetch = async () => {
         headers: { "Content-Type": "application/json" }
     });
     const data = await response.json();
+    
+    const status = response.status;
+    data['status'] = status;
+
     return data.instance || [];
 }
