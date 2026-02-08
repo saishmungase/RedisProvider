@@ -3,8 +3,12 @@
 import { useEffect, useState } from "react";
 import fetchUser from "../actions/fetchprofile";
 import { redirect } from "next/navigation";
+import RandomInstance from "../actions/randomInstace";
+import PopUp from "@/components/customPopup";
+import { liveFetch } from "../actions/instancefetch";
+import { Instance, BackendInstance } from "../live/page";
 
-interface Instance {
+interface Inst {
     port: number;
     status: string;
     createdat: string;
@@ -13,13 +17,55 @@ interface Instance {
 interface ProfileData {
     name: string;
     userOnPlatform: string;
-    activeInstance: Instance | null;
+    activeInstance: Inst | null;
     history: Instance[];
 }
 
 const UserDashboard = () => {
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [customPort, setCustomPort] = useState(false);
+    const [randomPort, setRandomPort] = useState(false);
+    const [instances, setInstances] = useState<Instance[]>([]);
+    
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const skeleton: Instance[] = [];
+                for (let port = 7000; port <= 7012; port++) {
+                    skeleton.push({ port, isTaken: false, expiresAt: 0 });
+                }
+
+                const instances = await liveFetch()
+                const activeList: BackendInstance[] = instances || [];
+
+                const mergedData = skeleton.map(skel => {
+                    const match = activeList.find(item => item.port === skel.port);
+                    if (match) {
+                        const creationTime = new Date(match.createdat).getTime();
+                        return {
+                            ...skel,
+                            isTaken: true,
+                            expiresAt: creationTime + TWENTY_FOUR_HOURS
+                        };
+                    }
+                    return skel;
+                });
+
+                setInstances(mergedData);
+            } catch (error) {
+                console.error("Fetch Error:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchData();
+        const poll = setInterval(fetchData, 30000);
+        return () => clearInterval(poll);
+    }, []);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -40,6 +86,28 @@ const UserDashboard = () => {
 
         fetchProfile();
     }, []);
+
+    const closePopUp = () => {
+        setCustomPort(false)
+    }
+
+    const submitPopUp = () => {
+        console.log("Pop Up Success !")
+        setCustomPort(false);
+    }
+
+    const randomInstance = async () => {
+        setRandomPort(true)
+        const token = localStorage.getItem("AuthToken") || ""
+        const data = await RandomInstance(token)
+        const { port } = data;
+        setRandomPort(false)
+        redirect(`/dashboard/instance/${port}`)
+    }
+
+    const customInstance = () => {
+        setCustomPort(true);
+    }
 
     if (isLoading) {
         return (
@@ -71,6 +139,9 @@ const UserDashboard = () => {
 
                 <section className="mb-12">
                     <h3 className="text-zinc-600 text-[10px] uppercase font-bold tracking-widest mb-4">Current Session</h3>
+                    
+                    { customPort && <PopUp data={instances} onClose={closePopUp} onSubmit={submitPopUp} />}
+
                     {profile.activeInstance ? (
                         <div 
                             onClick={() =>{
@@ -94,8 +165,19 @@ const UserDashboard = () => {
                             </button>
                         </div>
                     ) : (
-                        <div className="bg-[#0A0A0A] border border-dashed border-zinc-800 p-8 rounded-[2.5rem] text-center">
-                            <p className="text-zinc-500 text-sm italic">No running instances found.</p>
+                        <div className="p-8 flex flex-col items-center">
+                            <div className="bg-[#0A0A0A] w-3/4 border border-dashed border-zinc-800 p-8 rounded-[2.5rem] text-center">
+                                <p className="text-zinc-500 text-sm italic">No running instances found.</p>
+                            </div>
+                            
+                            <span className="flex p-4 gap-8">
+                                <button disabled={randomPort} onClick={customInstance} className="w-full sm:w-32 p-2.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-lg hover:shadow-emerald-500/20">
+                                    Custom Instance
+                                </button>
+                                <button disabled={randomPort} onClick={randomInstance} className="w-full sm:w-32 p-2.5 rounded-xl bg-white text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all shadow-lg hover:shadow-emerald-500/20">
+                                    { randomPort ? "...." : "Random Instance" }
+                                </button>
+                            </span>
                         </div>
                     )}
                 </section>
