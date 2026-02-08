@@ -53,7 +53,6 @@ const UserDashboard = ({ onSelectInstance }: { onSelectInstance: (inst: Instance
     return (
         <div className="min-h-screen bg-black text-white p-8 mt-20 font-sans">
             <div className="max-w-5xl mx-auto">
-                {/* Header Section */}
                 <div className="flex justify-between items-end mb-12">
                     <div>
                         <h1 className="text-zinc-500 text-xs uppercase tracking-[0.3em] font-black mb-2">Welcome Back</h1>
@@ -69,7 +68,6 @@ const UserDashboard = ({ onSelectInstance }: { onSelectInstance: (inst: Instance
                     </div>
                 </div>
 
-                {/* Active Instance Section */}
                 <section className="mb-12">
                     <h3 className="text-zinc-600 text-[10px] uppercase font-bold tracking-widest mb-4">Current Session</h3>
                     {profile.activeInstance ? (
@@ -99,7 +97,6 @@ const UserDashboard = ({ onSelectInstance }: { onSelectInstance: (inst: Instance
                     )}
                 </section>
 
-                {/* History Table */}
                 <section>
                     <h3 className="text-zinc-600 text-[10px] uppercase font-bold tracking-widest mb-4">Session History</h3>
                     <div className="bg-[#080808] border border-zinc-900 rounded-[2rem] overflow-hidden">

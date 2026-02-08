@@ -133,7 +133,6 @@ const InstanceDetail = ({ port = 7009, onBack }: InstanceDetailProps) => {
                         ← Back to Dashboard
                     </button>
 
-                    {/* Timer and Status UI */}
                     <div className="text-right">
                         <div className="flex items-center gap-2 justify-end mb-2">
                             <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full border ${status === 'RUNNING' ? 'text-emerald-500 border-emerald-500/30 bg-emerald-500/10' : 'text-red-500 border-red-500/30 bg-red-500/10'}`}>
@@ -150,7 +149,6 @@ const InstanceDetail = ({ port = 7009, onBack }: InstanceDetailProps) => {
                     {port}
                 </h1>
 
-                {/* Credentials Bar */}
                 <div className="flex flex-col sm:flex-row justify-center gap-6 py-10 border-y border-zinc-900 mb-12 bg-[#080808]/60 rounded-[2.5rem] px-10">
                     <div className="flex items-center gap-3">
                         <span className="text-zinc-600 italic font-mono text-sm">name:-</span>
@@ -176,7 +174,6 @@ const InstanceDetail = ({ port = 7009, onBack }: InstanceDetailProps) => {
                     </div>
                 </div>
 
-                {/* Navbar Navigation */}
                 <div className="flex flex-wrap gap-3 mb-12 justify-center">
                     {(Object.keys(LANGUAGE_DATA) as LanguageKey[]).map((lang) => (
                         <button 
@@ -193,7 +190,6 @@ const InstanceDetail = ({ port = 7009, onBack }: InstanceDetailProps) => {
                     ))}
                 </div>
 
-                {/* Integration Steps */}
                 <div className="space-y-12">
                     <section>
                         <h2 className="text-emerald-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Step-1: Install</h2>

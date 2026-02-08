@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Database, ChevronRight } from "lucide-react";
 import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -12,6 +13,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+const [tokenExist, setTokenExist] = useState(false);
+
+useEffect(() => {
+  const token = localStorage.getItem("AuthToken");
+  setTokenExist(!!token && token.length > 5);
+}, []);
+
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-black text-white antialiased`}>
@@ -32,16 +40,29 @@ export default function RootLayout({
                 Live Ports <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full text-[10px]">12 Free</span>
               </a>
             </div>
-
-            <button 
-            onClick={
-              ()=>{
-                redirect("/auth/signup")
+            {
+              tokenExist 
+              ?
+              <button 
+              onClick={
+                ()=>{
+                  redirect("/dashboard")
+                }
               }
+              className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center gap-2">
+                Dashboard <ChevronRight size={16} />
+              </button>
+              :
+              <button 
+              onClick={
+                ()=>{
+                  redirect("/auth/signup")
+                }
+              }
+              className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center gap-2">
+                Get Started <ChevronRight size={16} />
+              </button>
             }
-            className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center gap-2">
-              Get Started <ChevronRight size={16} />
-            </button>
           </div>
         </nav>
 
