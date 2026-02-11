@@ -2,7 +2,7 @@ import express from 'express';
 import { z } from 'zod'
 import { mailVarification } from './mail.js';
 import { createInstance, deleteContainer, isPortAvailable, redisCommand } from "@redis/service/root/manager.js"
-import { validateCode } from './db.js';
+// import { validateCode } from './db.js';
 import type { Request, Response, NextFunction } from 'express';
 import pool from './db/index.js';
 import bcrypt from "bcrypt";
@@ -12,6 +12,8 @@ import cors from 'cors'
 import { createInstanceQuery, fetchActives, fetchInstance, fetchInstances, fetchUserInstances, fetchUserName, isUserExist, isUserExistByEmail, loginQuery, privilegeCheck, setStopped, signUpQuery } from './db/queries.js';
 
 export const app = express();
+
+let map = new Map<string, string>();
 
 const mailSchema = z.object({
   email : z.string().email()
@@ -144,12 +146,15 @@ app.post("/signup", async (req, res) => {
 
     const mailState = await mailVarification(email);
 
-    if(mailState.status == "error-mail"){
+    if(mailState.status == "error-mail" || !mailState.code){
       return res.status(400).send({
         message : "Error While Sending Code, Please Try Later or use different email",
         description : "The carrier pigeon carrying your verification code got distracted by breadcrumbs. Try again, or use an email that doesn't scare my mail server."
       })
     }
+
+    const code = mailState.code;
+    map.set(email, code);
 
     return res.status(200).send({
       message : "Code is Being Shared To Your email Please Check!"
@@ -173,10 +178,27 @@ app.post("/verified-signup", async (req, res) => {
 
   const {firstName, lastName, email, password, passcode, } = data;
 
-  const isValid = await validateCode({ code: passcode, email });
+  let isValid;
+  try {
+    const code = map.get(email);
+    if(!code){
+      return res.status(404).send({message : "code does not found!"})
+    }
+    isValid = (code == passcode);
+  } catch (error) {
+    console.log("Hey")
+  }
+  finally{
+    map.forEach((key, val) => {
+      console.log("Remains:- " + key);
+    })
+  }
+
   if(!isValid){
     return res.status(400).send({ message: "Invalid PassCode", description : "Either you messed up the passcode or we sent it to Mama Coco. Check your inbox again, carefully this time!" });
   }
+
+  map.delete(email);
 
   const hashedPassword = await bcrypt.hash(password, saltRounds);
 

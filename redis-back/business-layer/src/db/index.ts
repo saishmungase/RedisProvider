@@ -1,8 +1,10 @@
 import pkg from "pg";
 const { Pool } = pkg;
 
+const url = process.env.DATABASE_URL
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: url,
   ssl: {
     rejectUnauthorized: false
   }
