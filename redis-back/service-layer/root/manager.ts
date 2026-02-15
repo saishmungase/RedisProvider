@@ -116,7 +116,6 @@ export const createInstance = async (props: { userId: string, userMail: string, 
   }
   else{
     const containers = await getAllContainers();
-    const takenPorts = new Set<number>();
     if(!containers) return {
       userId,
       status : 429,
