@@ -3,7 +3,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Database, ChevronRight } from "lucide-react";
-import { redirect } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -14,11 +14,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
 const [tokenExist, setTokenExist] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
 
-useEffect(() => {
-  const token = localStorage.getItem("AuthToken");
-  setTokenExist(!!token && token.length > 5);
-}, []);
+  useEffect(() => {
+    const token = localStorage.getItem("AuthToken");
+    setTokenExist(!!token && token.length > 5);
+  }, [pathname]);
 
   return (
     <html lang="en" className="dark">
@@ -45,7 +47,7 @@ useEffect(() => {
               <button 
               onClick={
                 ()=>{
-                  redirect("/dashboard")
+                router.push("/dashboard")
                 }
               }
               className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center gap-2">
@@ -55,7 +57,7 @@ useEffect(() => {
               <button 
               onClick={
                 ()=>{
-                  redirect("/auth/signup")
+                  router.push("/auth/signup")
                 }
               }
               className="bg-white text-black px-5 py-2 rounded-full text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center gap-2">
