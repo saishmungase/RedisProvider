@@ -1,7 +1,10 @@
 'use server'
 
+
+const api = process.env.API_URL
+
 export const liveFetch = async () => {
-    const response = await fetch('http://localhost:3000/used-instances', {
+    const response = await fetch(`${api}/used-instances`, {
         method: 'GET',
         headers: { "Content-Type": "application/json" }
     });

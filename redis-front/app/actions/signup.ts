@@ -1,7 +1,9 @@
 'use server'
 
+const api = process.env.API_URL
+
 export const reqSignup = async (mail : string) => {
-    const res = await fetch("http://localhost:3000/signup", {
+    const res = await fetch(`${api}/signup`, {
         method: 'POST',
         headers: {
             "Content-Type": "application/json"

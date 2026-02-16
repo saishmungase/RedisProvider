@@ -20,9 +20,12 @@ export interface InstanceResponse {
     data: RedisMetrics;
 }
 
+
+const api = process.env.API_URL
+
 const fetchInstance = async (port: number, token: string) => {
     try {
-        const response = await fetch(`http://localhost:3000/get-instance?port=${port}`, {
+        const response = await fetch(`${api}/get-instance?port=${port}`, {
             method: 'GET',
             headers: { 
                 "Content-Type": "application/json", 

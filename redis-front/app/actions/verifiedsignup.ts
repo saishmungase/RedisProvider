@@ -1,5 +1,7 @@
 'use server'
 
+const api = process.env.API_URL
+
 export const verfiedSignup = async (reqBody :  {
     firstName: string,
     lastName: string,
@@ -7,7 +9,7 @@ export const verfiedSignup = async (reqBody :  {
     password: string,
     passcode: string
 }) => {
-    const res = await fetch("http://localhost:3000/verified-signup", {
+    const res = await fetch(`${api}/verified-signup`, {
         method: 'POST',
         headers: {
             "Content-Type": "application/json"
