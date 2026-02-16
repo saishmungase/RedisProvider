@@ -138,31 +138,31 @@ const InstanceDetail = ({ onBack }: InstanceDetailProps) => {
             install: "npm i redis",
             language: "javascript",
             fileName: "nodejs_client.js",
-            code: `import { createClient } from 'redis';\n\nconst client = createClient({\n    socket: { \n        host: "redis.saish.tech", \n        port: ${port} \n    },\n    username: "${username}",\n    password: "${password}"\n});\n\nasync function handleRedis() {\n    await client.connect();\n    await client.set('key', 'Hello QuickDB!');\n    return await client.get('key');\n}\n\nhandleRedis();`
+            code: `import { createClient } from 'redis';\n\nconst client = createClient({\n    socket: { \n        host: "instances.saish.tech", \n        port: ${port} \n    },\n    username: "${username}",\n    password: "${password}"\n});\n\nasync function handleRedis() {\n    await client.connect();\n    await client.set('key', 'Hello QuickDB!');\n    return await client.get('key');\n}\n\nhandleRedis();`
         },
         SPRING: {
             install: 'implementation "org.springframework.boot:spring-boot-starter-data-redis"',
             language: "java",
             fileName: "RedisConfig.java",
-            code: `spring.data.redis.host=redis.saish.tech\nspring.data.redis.port=${port}\nspring.data.redis.username=${username}\nspring.data.redis.password=${password}\n\n@Autowired\nprivate StringRedisTemplate redisTemplate;\n\npublic void saveData(String key, String value) {\n    redisTemplate.opsForValue().set(key, value);\n}`
+            code: `spring.data.redis.host=instances.saish.tech\nspring.data.redis.port=${port}\nspring.data.redis.username=${username}\nspring.data.redis.password=${password}\n\n@Autowired\nprivate StringRedisTemplate redisTemplate;\n\npublic void saveData(String key, String value) {\n    redisTemplate.opsForValue().set(key, value);\n}`
         },
         PYTHON: {
             install: "pip install redis",
             language: "python",
             fileName: "app.py",
-            code: `import redis\n\nr = redis.Redis(\n    host='redis.saish.tech',\n    port=${port},\n    username='${username}',\n    password='${password}',\n    decode_responses=True\n)\n\nr.set('foo', 'bar')\nprint(r.get('foo'))`
+            code: `import redis\n\nr = redis.Redis(\n    host='instances.saish.tech',\n    port=${port},\n    username='${username}',\n    password='${password}',\n    decode_responses=True\n)\n\nr.set('foo', 'bar')\nprint(r.get('foo'))`
         },
         GO: {
             install: "go get github.com/redis/go-redis/v9",
             language: "go",
             fileName: "main.go",
-            code: `rdb := redis.NewClient(&redis.Options{\n    Addr:     "redis.saish.tech:${port}",\n    Username: "${username}",\n    Password: "${password}",\n})`
+            code: `rdb := redis.NewClient(&redis.Options{\n    Addr:     "instances.saish.tech:${port}",\n    Username: "${username}",\n    Password: "${password}",\n})`
         },
         RUST: {
             install: 'redis = "0.24.0"',
             language: "rust",
             fileName: "main.rs",
-            code: `let client = redis::Client::open("redis://${username}:${password}@redis.saish.tech:${port}")?;`
+            code: `let client = redis::Client::open("redis://${username}:${password}@instances.saish.tech:${port}")?;`
         }
     };
 
