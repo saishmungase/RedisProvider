@@ -8,3 +8,4 @@
 /redis-front/node_modules
 /redis-front/.next/
 /redis-back/business-layer/src/db/table.js
+/redis-front/.env
