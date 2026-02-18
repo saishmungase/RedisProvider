@@ -1,15 +1,15 @@
 import { mailer } from "./libs.js"
-import { v4 } from "uuid";
 
 export const mailVarification = async (email : string) => {
 
-    const id = v4();
+    const id = Math.floor(100000 + Math.random() * 900000).toString();
     
     try {
-        await mailer.sendBasic({
+        await mailer.sendWithTemplate({
             to: email,
             subject: "Verification Code!",
-            text: `$Hey Your Verficiation Code is ${id}`
+            template: "./business-layer/src/html/mail.html",
+            variables: { id: id }
         });
 
     } catch (error) {
