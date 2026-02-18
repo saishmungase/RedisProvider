@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { app } from "./api.js";
 import { Redis } from '@upstash/redis'
 import { cleanup } from "./cleaner.js";
