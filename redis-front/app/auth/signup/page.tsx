@@ -5,6 +5,7 @@ import { verfiedSignup } from "@/app/actions/verifiedsignup";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { useState, useEffect } from "react"
+import { checkEmail } from "@/app/actions/checkEmail";
 
 const SignUp = () => {
     const [mail, setMail] = useState("");
@@ -22,6 +23,9 @@ const SignUp = () => {
     const [emailError, setEmailError] = useState("");
     const [passwordError, setPasswordError] = useState("");
 
+    const [emailAvailable, setEmailAvailable] = useState<boolean | null>(null);
+    const [checkingMail, setCheckingMail] = useState(false);
+
     useEffect(() => {
         if (confirmPassword && password !== confirmPassword) {
             setPasswordError("Passwords do not match");
@@ -29,6 +33,29 @@ const SignUp = () => {
             setPasswordError("");
         }
     }, [password, confirmPassword]);
+
+    useEffect(() => {
+        if (!mail.includes("@gmail.")) return;
+
+        const timer = setTimeout(async () => {
+            setCheckingMail(true);
+            const { status, data } = await checkEmail(mail);
+
+            if (status === 200 || status == 409) {
+                if (data.available) {
+                    setEmailAvailable(true);
+                    setEmailError("");
+                } else {
+                    setEmailAvailable(false);
+                    setEmailError("Email already registered. Try login.");
+                }
+            }
+            console.log(emailError)
+            setCheckingMail(false);
+        }, 1000);
+
+        return () => clearTimeout(timer);
+    }, [mail]);
 
     async function reqMail() {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -53,7 +80,10 @@ const SignUp = () => {
             }
         );
 
-        localStorage.setItem("AuthToken", `Bearer ${token}`)
+        if(token){
+            localStorage.setItem("AuthToken", `Bearer ${token}`)
+        }
+        else console.log("Failed To Authenticate")
     }
 
     return <div className="flex justify-center items-center h-screen w-full">
@@ -89,17 +119,22 @@ const SignUp = () => {
                     </>
                 }
 
-                {/* Email Section with Validation Display */}
                 {emailError && <p className="text-red-500 text-sm font-semibold">{emailError}</p>}
                 <span className="flex flex-row w-full gap-2 m-4 justify-center">
                     <label>Email: </label>
                     <input
-                        placeholder="johnsnow.north.king@gmail.com"
-                        onChange={(e) => {
-                            setMail(e.target.value);
-                            if (emailError) setEmailError("");
-                        }}
+                      placeholder="johnsnow.north.king@gmail.com"
+                      onChange={(e) => {
+                          setMail(e.target.value);
+                          setEmailAvailable(null);
+                          if (emailError) setEmailError("");
+                      }}
                     />
+                    {checkingMail && <p className="text-gray-400 text-sm">Checking email...</p>}
+
+                    {((emailAvailable === true)&&(!doesSubmit)) && (
+                      <p className="text-green-500 text-sm">Email available ✔</p>
+                    )}
                 </span>
 
                 {
@@ -158,7 +193,7 @@ const SignUp = () => {
                             </span>
 
                             <button
-                                disabled={!!passwordError} 
+                                disabled={!!passwordError || emailAvailable == false} 
                                 className={`flex cursor-pointer items-center justify-center h-10 px-4 border-2 border-white text-white font-bold rounded ${!!passwordError ? 'bg-gray-500' : 'bg-black'}`}
                                 onClick={async () => {
                                     await signUp()
@@ -172,7 +207,7 @@ const SignUp = () => {
                         :
                         <>
                         <button
-                            disabled={reqLoad}
+                            disabled={reqLoad || emailAvailable === false}
                             className="cursor-pointer flex items-center justify-center h-10 px-4 bg-black border-2 border-white text-white font-bold rounded"
                             onClick={async () => {
                                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
