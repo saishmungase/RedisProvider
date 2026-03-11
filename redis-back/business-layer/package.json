@@ -15,6 +15,7 @@
     "@upstash/redis": "^1.36.1",
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.3.1",
     "fastforwardit": "^1.0.1",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.17.2",
