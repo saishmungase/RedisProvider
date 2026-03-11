@@ -44,3 +44,11 @@ SELECT id, instanceUSER, containerId FROM INSTANCES WHERE port = $1 AND status =
 export const setStopped = `
 UPDATE instances SET status = 'STOPPED' WHERE id = $1;
 `
+
+export const allUser = `SELECT email FROM users`
+
+export const mailTaken = `
+SELECT EXISTS(
+  SELECT 1 FROM users WHERE email = $1
+);
+`
