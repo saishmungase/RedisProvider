@@ -10,6 +10,9 @@ import type { JwtPayload } from 'jsonwebtoken'
 import jwt from 'jsonwebtoken'
 import cors from 'cors'
 import { createInstanceQuery, fetchActives, fetchInstance, fetchInstances, fetchUserInstances, fetchUserName, isUserExist, isUserExistByEmail, loginQuery, privilegeCheck, setStopped, signUpQuery } from './db/queries.js';
+import { mailAvailable } from './helper/isAvailable.js';
+import { bloomFilter } from './utils.js';
+import rateLimit from "express-rate-limit";
 
 export const app = express();
 
@@ -50,7 +53,19 @@ if (!saltRounds || isNaN(saltRounds)) {
   throw new Error("Invalid bcrypt salt rounds");
 }
 
+const mailCheckLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: {
+    message: "Too many requests",
+    description: "Relax keyboard warrior, give the server a second to breathe."
+  }
+});
 
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5
+});
 
 app.use(express.json());
 app.use(cors())
@@ -121,6 +136,42 @@ const verifyToken = async (req : Request, res : Response, next : NextFunction) =
   }
 }
 
+app.post("/mailCheck", mailCheckLimiter, async(req, res) => {
+  const data = req.body
+  const parseResult = mailSchema.safeParse(data);
+  console.log(parseResult.data)
+  try{
+    if(!parseResult.success){
+      res.status(400).send({
+        message : "Invalid Credentials",
+        description : "Come on, it's a single email field. Even a keyboard-smashing cat could get closer than this."
+      });
+      return;
+    }
+    
+    const { email } = parseResult.data;
+    const existing = await mailAvailable(email);
+
+    if (existing.isTaken) {
+      return res.status(409).send({
+        message: "User already exists",
+        description : "Wait... haven't we met before? Your email is already in my database. Either you have a twin, or you’re already signed up. Try logging in instead!"
+      });
+    }
+
+    return res.status(200).send({
+      available : !existing.isTaken
+    })
+  }
+  catch(e){
+    console.log(e)
+    return res.status(500).send({
+      message : "Unable to Store User To Database!",
+      description : "The server is showing some attitude and refusing to store your data. (Backstage: Hey Intern, tell Saish to grab a slipper. Let’s give this server some 'Asian treatment'.)"
+    })
+  }
+})
+
 app.post("/signup", async (req, res) => {
     const data = req.body; 
     const parseResult = mailSchema.safeParse(data);
@@ -134,7 +185,8 @@ app.post("/signup", async (req, res) => {
       return;
     }
     
-    const {email} = data;
+    let {email} = data;
+    email = email.trim().toLowerCase();
     const existing = await pool.query(isUserExistByEmail, [email]);
 
     if (existing.rows.length > 0) {
@@ -176,26 +228,21 @@ app.post("/verified-signup", async (req, res) => {
     return;
   }
 
-  const {firstName, lastName, email, password, passcode, } = data;
+  const {firstName, lastName, email, password, passcode, } = parseResult.data;
 
-  let isValid;
-  try {
-    const code = map.get(email);
-    if(!code){
-      return res.status(404).send({message : "code does not found!"})
-    }
-    isValid = (code == passcode);
-  } catch (error) {
-    console.log("Hey")
-  }
-  finally{
-    map.forEach((key, val) => {
-      console.log("Remains:- " + key);
-    })
+  const code = map.get(email);
+
+  if (!code) {
+    return res.status(404).send({
+      message: "Code not found"
+    });
   }
 
-  if(!isValid){
-    return res.status(400).send({ message: "Invalid PassCode", description : "Either you messed up the passcode or we sent it to Mama Coco. Check your inbox again, carefully this time!" });
+  if (code !== passcode) {
+    return res.status(400).send({
+      message: "Invalid PassCode",
+      description: "Either you messed up the passcode or we sent it to Mama Coco."
+    });
   }
 
   map.delete(email);
@@ -221,7 +268,7 @@ app.post("/verified-signup", async (req, res) => {
       secret,
       { expiresIn: "7d" }
     );
-
+    bloomFilter.add(email)
     return res.status(200).send({
       token : token,
       message : "Data is being Stored Successfully!"
@@ -235,7 +282,7 @@ app.post("/verified-signup", async (req, res) => {
   }
 })
 
-app.post("/login", async (req, res) => {
+app.post("/login", loginLimiter, async (req, res) => {
   const data = req.body;
   const parseResult = signInSchema.safeParse(data);
   if (!parseResult.success) {
