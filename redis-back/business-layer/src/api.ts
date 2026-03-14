@@ -352,8 +352,8 @@ app.post("/createInstance", verifyToken, async (req, res) => {
         message : "Error While Creating Instance"
       })
     }
-
-    const saving = await pool.query(createInstanceQuery, [containerId, assignedPort, redisPassword, userId, overhead]);
+    const creationTime = new Date().toISOString();
+    const saving = await pool.query(createInstanceQuery, [containerId, assignedPort, redisPassword, userId, overhead, creationTime]);
 
     const { id, port, password, instanceUSER } = saving.rows[0]
     
@@ -423,7 +423,8 @@ app.post("/custom-instance", verifyToken, async(req, res) => {
       })
     }
 
-    const saving = await pool.query(createInstanceQuery, [containerId, assignedPort, redisPassword, userId, overhead]);
+    const creationTime = new Date().toISOString();
+    const saving = await pool.query(createInstanceQuery, [containerId, assignedPort, redisPassword, userId, overhead, creationTime]);
 
     const { id, port, password, instanceUSER } = saving.rows[0]
     
