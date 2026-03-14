@@ -133,7 +133,7 @@ const Login = () => {
                         <div className="relative flex items-center">
 
                             <input
-                                disabled={!emailExists}
+                                disabled={emailExists === false}
                                 placeholder="Chintu"
                                 type={showPassword ? "text" : "password"}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -155,7 +155,7 @@ const Login = () => {
                     </span>
 
                     <button
-                        disabled={reqLoad || !emailExists}
+                        disabled={reqLoad || emailExists === false}
                         className="cursor-pointer flex items-center justify-center h-10 px-4 bg-black border-2 border-white text-white font-bold rounded"
                         onClick={signIn}
                     >
