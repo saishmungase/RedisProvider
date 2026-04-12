@@ -11,12 +11,10 @@ import jwt from 'jsonwebtoken'
 import cors from 'cors'
 import { createInstanceQuery, fetchActives, fetchInstance, fetchInstances, fetchUserInstances, fetchUserName, isUserExist, isUserExistByEmail, loginQuery, privilegeCheck, setStopped, signUpQuery } from './db/queries.js';
 import { mailAvailable } from './helper/isAvailable.js';
-import { bloomFilter } from './utils.js';
+import { bloomFilter, cache, redis } from './utils.js';
 import rateLimit from "express-rate-limit";
 
 export const app = express();
-
-let map = new Map<string, string>();
 
 const mailSchema = z.object({
   email : z.string().email()
@@ -91,7 +89,7 @@ interface AuthPayload extends JwtPayload {
 
 const verifyToken = async (req : Request, res : Response, next : NextFunction) => {
   const authHeader = req.headers.authorization;
-
+  console.log(authHeader)
   if (!authHeader)
     return res.status(401).send({ 
       message: "No token provided", 
@@ -111,7 +109,6 @@ const verifyToken = async (req : Request, res : Response, next : NextFunction) =
       token,
       secret
     ) as AuthPayload;
-
     const result = await pool.query(
       isUserExist,
       [decoded.userId]
@@ -131,8 +128,9 @@ const verifyToken = async (req : Request, res : Response, next : NextFunction) =
     };
 
     next();
-  } catch (err) {
-    return res.status(500).send({ message: "Invalid token", description : "Smells like our server is leaking! (Backstage: Saish! Bring some duct tape and a bucket, the middleware is dripping again!)" });
+  } catch (err : any) {
+    const message = err.name === 'TokenExpiredError' ? "Session expired" : "Invalid token";
+    return res.status(401).send({ message, description: "..." });
   }
 }
 
@@ -206,7 +204,7 @@ app.post("/signup", async (req, res) => {
     }
 
     const code = mailState.code;
-    map.set(email, code);
+    await redis.set(`verify:${email}`, code, { ex: 600 })
 
     return res.status(200).send({
       message : "Code is Being Shared To Your email Please Check!"
@@ -230,7 +228,7 @@ app.post("/verified-signup", async (req, res) => {
 
   const {firstName, lastName, email, password, passcode, } = parseResult.data;
 
-  const code = map.get(email);
+  const code = await redis.get(`verify:${email})`);
 
   if (!code) {
     return res.status(404).send({
@@ -245,7 +243,7 @@ app.post("/verified-signup", async (req, res) => {
     });
   }
 
-  map.delete(email);
+  await redis.del(`verify:${email})`)
 
   const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -336,9 +334,10 @@ app.post("/login", loginLimiter, async (req, res) => {
 
 app.post("/createInstance", verifyToken, async (req, res) => {
   const { userId, email } = req.user!;
-
+  let createdContainer: string | null = null;
   try {
     const { username, status, containerId, assignedPort, redisPassword, overhead } = await createInstance({ userId, userMail : email })
+    createdContainer = containerId
     console.log(status)
     if(status == 403){
       return res.status(403).send({
@@ -356,7 +355,7 @@ app.post("/createInstance", verifyToken, async (req, res) => {
     const saving = await pool.query(createInstanceQuery, [containerId, assignedPort, redisPassword, userId, overhead, creationTime]);
 
     const { id, port, password, instanceUSER } = saving.rows[0]
-    
+    await cache.liveSet();
     return res.status(200).send({
       data : {
         id, port, username, password, instanceUSER
@@ -366,6 +365,9 @@ app.post("/createInstance", verifyToken, async (req, res) => {
 
   } catch (error) {
     console.log( "Erro While Creating a Job:- " + error)
+    if(createdContainer){
+      await deleteContainer(createdContainer)
+    }
     return res.status(500).send({
       message : "Internal Server Error!",
       description : "The container manager failed to start. Saish has motion sickness and we sent him inside a giant fish (I think they call it 'Docker')."
@@ -376,9 +378,7 @@ app.post("/createInstance", verifyToken, async (req, res) => {
 
 app.get("/used-instances", async (req, res) => {
   try {
-    const active_data = await pool.query(fetchActives);
-
-    const active_instances = active_data.rows;
+    const active_instances = await cache.liveCache();
 
     res.status(200).send({
       message : "Active Instances Fetched Successfully.",
@@ -428,6 +428,7 @@ app.post("/custom-instance", verifyToken, async(req, res) => {
 
     const { id, port, password, instanceUSER } = saving.rows[0]
     
+    await cache.liveSet();
     return res.status(200).send({
       data : {
         id, port, username, password, instanceUSER
@@ -550,7 +551,8 @@ app.delete("/delete-instance", verifyToken, async (req, res) => {
 
     await deleteContainer(containerId);
     await pool.query(setStopped, [id]);
-
+    
+    await cache.liveSet();
     res.status(200).send({ message: "Instance has been deleted successfully." });
   } catch (error) {
     res.status(500).send({
