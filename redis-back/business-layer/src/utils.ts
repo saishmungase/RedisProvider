@@ -5,6 +5,7 @@ import { Redis } from '@upstash/redis'
 import { cleanup } from "./cleaner.js";
 import { BloomFilter } from './helper/bloom.js';
 import { initBloomFilter } from './initBloom.js';
+import { CacheManager } from './cache/caching.js';
 
 const port = process.env.PORT;  
 const url = process.env.REDIS_REST_URL
@@ -16,8 +17,10 @@ export const bloomFilter = new BloomFilter(Number(bucketSize), Number(shift));
 
 export const redis = new Redis({
   url,
-  token,
+  token
 })
+
+export const cache = new CacheManager();
 
 initBloomFilter();
 
