@@ -105,7 +105,7 @@ const Live = () => {
     if (isLoading) return <div className="bg-black min-h-screen flex items-center justify-center text-zinc-500 font-mono">LOADING_INSTANCES...</div>;
 
     return (
-        <div className="min-h-screen bg-black mt-[100px] text-white p-4 sm:p-10 font-sans">
+        <div className="min-h-screen bg-black text-white p-4 sm:p-10 font-sans">
             <div className="max-w-4xl mx-auto">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-10 gap-4">
                     <h1 className="text-2xl font-bold tracking-tight">Live Instances</h1>
@@ -123,7 +123,7 @@ const Live = () => {
                         ))}
                     </div>
                 </div>
-                { popup && <PopUp data={instances} selected={selectedPort} onClose={closePopUp} onSubmit={submitPopUp} />}
+                { popup && <PopUp data={instances} selected={selectedPort} onClose={closePopUp} />}
                 <div className="flex flex-col gap-3">
                     {filteredInstances.map((instance) => (
                         <div 

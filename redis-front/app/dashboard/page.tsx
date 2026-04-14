@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import fetchUser from "../actions/fetchprofile";
-import { redirect } from "next/navigation";
 import RandomInstance from "../actions/randomInstace";
 import PopUp from "@/components/customPopup";
 import { liveFetch } from "../actions/instancefetch";
@@ -67,17 +67,27 @@ const UserDashboard = () => {
         return () => clearInterval(poll);
     }, []);
 
+    const router = useRouter();
+
     useEffect(() => {
         const fetchProfile = async () => {
             try {
                 const token = localStorage.getItem('AuthToken')
                 if(!token){
-                    redirect("/auth/login")
+                    router.push("/auth/login");
+                    return;
                 }
                 const data = await fetchUser(token);
                 
-                if(data.status != 200){
-                    redirect("/auth/signup")
+                if(data.status === 401){
+                    localStorage.removeItem('AuthToken');
+                    router.push("/auth/login");
+                    return;
+                }
+
+                if(data.status !== 200){
+                    router.push("/auth/signup");
+                    return;
                 }
 
                 if (data) {
@@ -86,6 +96,8 @@ const UserDashboard = () => {
 
             } catch (error) {
                 console.error("Error fetching profile:", error);
+                localStorage.removeItem('AuthToken');
+                router.push("/auth/login");
             } finally {
                 setIsLoading(false);
             }
@@ -107,12 +119,33 @@ const UserDashboard = () => {
         setRandomPort(true)
         const token = localStorage.getItem("AuthToken")
         if(!token){
-            redirect("/auth/login")
+            localStorage.removeItem('AuthToken');
+            router.push("/auth/login");
+            return;
         }
         const data = await RandomInstance(token)
-        const { port } = data;
+
+        if (data?.status === 401) {
+            localStorage.removeItem('AuthToken');
+            router.push("/auth/login");
+            return;
+        }
+
+        if (data?.status !== 200) {
+            setRandomPort(false);
+            alert(data?.message || "Unable to create instance");
+            return;
+        }
+
+        const port = data?.data?.port ?? data?.port;
         setRandomPort(false)
-        redirect(`/dashboard/instance/${port}`)
+
+        if (!port) {
+            alert("Unable to read instance port from server response.");
+            return;
+        }
+
+        router.push(`/dashboard/instance/${port}`)
     }
 
     const customInstance = () => {
@@ -130,7 +163,7 @@ const UserDashboard = () => {
     if (!profile) return null;
 
     return (
-        <div className="min-h-screen bg-black text-white p-8 mt-20 font-sans">
+        <div className="min-h-screen bg-black text-white p-8 font-sans">
             <div className="max-w-5xl mx-auto">
                 <div className="flex justify-between items-end mb-12">
                     <div>
@@ -150,12 +183,12 @@ const UserDashboard = () => {
                 <section className="mb-12">
                     <h3 className="text-zinc-600 text-[10px] uppercase font-bold tracking-widest mb-4">Current Session</h3>
                     
-                    { customPort && <PopUp data={instances} onClose={closePopUp} onSubmit={submitPopUp} />}
+                    { customPort && <PopUp data={instances} onClose={closePopUp} />}
 
                     {profile.activeInstance ? (
                         <div 
                             onClick={() =>{
-                                redirect("/dashboard/instance/"+profile.activeInstance?.port)
+                                router.push("/dashboard/instance/" + profile.activeInstance?.port)
                             } }
                             className="group bg-[#0A0A0A] border border-zinc-800 p-8 rounded-[2.5rem] cursor-pointer hover:border-emerald-500/50 transition-all flex flex-col md:flex-row justify-between items-center"
                         >

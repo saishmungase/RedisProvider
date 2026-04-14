@@ -1,5 +1,7 @@
+'use client'
+
 import CustomInstance from "@/app/actions/custominstance";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 type PopupType = {
@@ -11,11 +13,11 @@ type PopupType = {
 interface PopUpProps {
   data: PopupType[];
   onClose: () => void;
-  onSubmit: (port: number) => void;
-  selected?: number
+  selected?: number;
 }
 
 const PopUp = ({ data, onClose, selected }: PopUpProps) => {
+  const router = useRouter();
   const [selectedPort, setSelectedPort] = useState<PopupType>(
   selected !== undefined
     ? data.find((item) => item.port === selected) ??
@@ -25,18 +27,32 @@ const PopUp = ({ data, onClose, selected }: PopUpProps) => {
   );
 
   
-  const onSubmit =  async (port : number) => {
+  const handleSubmit =  async (port : number) => {
     setSubmit(true)
     const token = localStorage.getItem("AuthToken");
     if(!token || token.length <= 5){
-      redirect("/auth/login")
+      localStorage.removeItem("AuthToken");
+      router.push("/auth/login");
+      return;
     }
-    console.log(token)
 
     const data = await CustomInstance(port, token);
     setSubmit(false);
+
+    if (data?.status === 401) {
+      localStorage.removeItem("AuthToken");
+      router.push("/auth/login");
+      return;
+    }
+
+    const portResult = data?.data?.port ?? data?.port;
+    if (!portResult) {
+      alert("Unable to create the instance. Please try again.");
+      return;
+    }
+
     onClose();
-    redirect(`/dashboard/instance/${data.port}`)
+    router.push(`/dashboard/instance/${portResult}`);
   }
 
 
@@ -123,7 +139,7 @@ const PopUp = ({ data, onClose, selected }: PopUpProps) => {
           </button>
           <button 
             disabled={selectedPort.isTaken || submit}
-            onClick={() => onSubmit(selectedPort.port)}
+            onClick={() => handleSubmit(selectedPort.port)}
             className="flex-1 py-3.5 px-6 rounded-xl bg-white text-black font-bold hover:bg-gray-200 disabled:opacity-20 disabled:grayscale transition-all active:scale-95"
           >
             {submit ? "...." : "Submit"}

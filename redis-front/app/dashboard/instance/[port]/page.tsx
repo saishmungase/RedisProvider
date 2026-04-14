@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import fetchInstance, { InstanceResponse, RedisMetrics } from '@/app/actions/fetchinstance';
-import { redirect, useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import deleteInstance from '@/app/actions/deleteInstance';
 
 interface LanguageConfig {
@@ -64,12 +64,21 @@ const InstanceDetail = ({ onBack }: InstanceDetailProps) => {
             const token = localStorage.getItem("AuthToken");
             
             if(!token || token.length <= 5){
-              redirect("/auth/login")
+              localStorage.removeItem("AuthToken");
+              router.push("/auth/login");
+              return;
             }
 
             const response: InstanceResponse | null = await fetchInstance(port, token);
-            if(response?.status != "200"){
-                redirect("/live")
+            if ((response?.status as any) === 401) {
+                localStorage.removeItem("AuthToken");
+                router.push("/auth/login");
+                return;
+            }
+
+            if((response?.status as any) !== 200){
+                router.push("/live")
+                return;
             }
             if (response) {
                 setUserName(response.username);
