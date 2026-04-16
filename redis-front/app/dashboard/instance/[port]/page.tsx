@@ -93,14 +93,20 @@ const InstanceDetail = ({ onBack }: InstanceDetailProps) => {
     }, [port]);
 
     const startTimer = (createdAt: string) => {
-        const expiryTime = new Date(createdAt).getTime() + (24 * 60 * 60 * 1000);
+        const startTime = isNaN(Number(createdAt)) 
+        ? new Date(createdAt).getTime() 
+        : Number(createdAt);
+
+        const expiryTime = startTime + (24 * 60 * 60 * 1000);
         const update = () => {
-            const now = new Date().getTime();
+            const now = Date.now();
             const distance = expiryTime - now;
             if (distance < 0) { setTimeLeft("EXPIRED"); return true; }
-            const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            
+            const h = Math.floor(distance / (1000 * 60 * 60));
             const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const s = Math.floor((distance % (1000 * 60)) / 1000);
+            
             setTimeLeft(`${h}h ${m}m ${s}s`);
             return false;
         };

@@ -44,7 +44,9 @@ const UserDashboard = () => {
                 const mergedData = skeleton.map(skel => {
                     const match = activeList.find(item => item.port === skel.port);
                     if (match) {
-                        const creationTime = new Date(match.createdat).getTime();
+                        const creationTime = isNaN(Number(match.createdat)) 
+                        ? new Date(match.createdat).getTime() 
+                        : Number(match.createdat);
                         return {
                             ...skel,
                             isTaken: true,
@@ -199,7 +201,13 @@ const UserDashboard = () => {
                                 <div>
                                     <p className="text-zinc-400 font-medium">Instance Active</p>
                                     <p className="text-zinc-600 text-sm">
-                                        Started: {new Date(profile.activeInstance.createdat).toLocaleTimeString()}
+                                        Started: {
+                                            new Date(
+                                                isNaN(Number(profile.activeInstance.createdat)) 
+                                                    ? profile.activeInstance.createdat 
+                                                    : Number(profile.activeInstance.createdat)
+                                            ).toLocaleTimeString()
+                                        }
                                     </p>
                                 </div>
                             </div>

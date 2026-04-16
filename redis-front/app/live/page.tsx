@@ -58,7 +58,9 @@ const Live = () => {
                 const mergedData = skeleton.map(skel => {
                     const match = activeList.find(item => item.port === skel.port);
                     if (match) {
-                        const creationTime = new Date(match.createdat).getTime();
+                        const creationTime = isNaN(Number(match.createdat)) 
+                        ? new Date(match.createdat).getTime() 
+                        : Number(match.createdat);
                         return {
                             ...skel,
                             isTaken: true,
