@@ -97,6 +97,11 @@ const SignUp = () => {
                 {
                     doesSubmit &&
                     <>
+                        <div className="bg-green-900/20 border border-green-500/50 p-2 rounded-md mb-4 text-center w-full max-w-sm">
+                            <p className="text-green-400 text-xs">
+                                ✨ We've shared a code to <strong>{mail}</strong>. Please check your inbox!
+                            </p>
+                        </div>
                         <span className="flex flex-row w-full gap-2 m-4 justify-center">
                             <label>Firstname: </label>
                             <input
