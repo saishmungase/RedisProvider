@@ -18,6 +18,7 @@
     "express-rate-limit": "^8.3.1",
     "fastforwardit": "^1.0.1",
     "jsonwebtoken": "^9.0.3",
+    "openai": "^6.38.0",
     "pg": "^8.17.2",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
