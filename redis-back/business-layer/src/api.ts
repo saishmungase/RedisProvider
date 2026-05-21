@@ -13,6 +13,7 @@ import { createInstanceQuery, fetchActives, fetchInstance, fetchInstances, fetch
 import { mailAvailable } from './helper/isAvailable.js';
 import { bloomFilter, cache, redis } from './utils.js';
 import rateLimit from "express-rate-limit";
+import { aiQuery, available_tools, SYSTEM_PROMPT } from './agent-config.js';
 
 export const app = express();
 
@@ -169,6 +170,91 @@ app.post("/mailCheck", mailCheckLimiter, async(req, res) => {
     })
   }
 })
+
+app.post("/agent/stream", async (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const { user_query, port, userPass } = req.body;
+    let message_history: any[] = [];
+    
+    message_history.push({ "role": "system", "content": SYSTEM_PROMPT });
+    
+    message_history.push({ 
+        "role": "user", 
+        "content": `User Query: ${user_query} (port: ${port}, userPass: ${userPass})` 
+    });
+
+    while (true) {
+        try {
+            const ai_response = await aiQuery(message_history);
+            
+            if (!ai_response) throw new Error("No response from AI");
+            
+            message_history.push({ "role": "assistant", "content": ai_response });
+
+            let parsed_result;
+            try {
+                const cleaned_response = ai_response.replace(/```json/g, '').replace(/```/g, '').trim();
+                parsed_result = JSON.parse(cleaned_response);
+            } catch (error) {
+                message_history.push({ 
+                    "role": "user", 
+                    "content": "Error: Invalid JSON format. Output ONLY raw JSON." 
+                });
+                continue;
+            }
+
+            if (parsed_result.step === "START" || parsed_result.step === "PLAN") {
+                const payload = JSON.stringify({ type: "thought", content: parsed_result.content });
+                res.write(`data: ${payload}\n\n`);
+                message_history.push({ "role": "user", "content": "Please provide the next step." });
+                continue;
+            }
+
+            if (parsed_result.step === "TOOL") {
+                const tool_call = parsed_result.tool;
+                const tool_in = parsed_result.input; 
+
+                const payload = JSON.stringify({ type: "thought", content: parsed_result.content || `Running ${tool_call}` });
+                res.write(`data: ${payload}\n\n`);
+
+                let tool_res;
+                if (available_tools[tool_call]) {
+                    tool_res = await available_tools[tool_call](tool_in);
+                } else {
+                    tool_res = `Error: Tool ${tool_call} not found.`;
+                }
+
+                message_history.push({
+                    "role": "user",
+                    "content": JSON.stringify({
+                        "step": "OBSERVE",
+                        "tool": tool_call,
+                        "output": tool_res
+                    })
+                });
+                continue;
+            }
+
+            if (parsed_result.step === "OUTPUT") {
+                const payload = JSON.stringify({ type: "result", content: parsed_result.content });
+                res.write(`data: ${payload}\n\n`);
+                break;
+            }
+
+            message_history.push({ "role": "user", "content": "Please provide the next step." });
+
+        } catch (error) {
+            console.error("Agent Loop Error:", error);
+            const finalPayload = JSON.stringify({ type: "result", content: "Agent encountered a critical error." });
+            res.write(`data: ${finalPayload}\n\n`);
+            break;
+        }
+    }
+    res.end();
+});
 
 app.post("/signup", async (req, res) => {
     const data = req.body; 
