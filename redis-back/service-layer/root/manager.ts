@@ -2,7 +2,7 @@ import Docker from "dockerode";
 import crypto from "crypto";
 import pool from "@redis/business/src/db/index.js"
 
-const manager = new Docker();
+export const manager = new Docker();
 
 const RANGE = { startPort: 7000, endPort: 7012 };
 
@@ -130,6 +130,7 @@ export const createInstance = async (props: { userId: string, userMail: string, 
       console.log(info + " == " + userMail)
 
       if (info === userMail) {
+        console.log("The mails are not equal may be")
         return {
           userId,
           status : 403,
@@ -271,6 +272,10 @@ export const createInstance = async (props: { userId: string, userMail: string, 
 
   const match = rawInfo.match(/used_memory:(\d+)/);
   const overhead = match ? parseInt(match[1], 10) : 0;
+
+  console.log("The instance Specs =>" + 
+    userId + "->" + "->" + container.id + "->" + port + "->" + clientUser + "->" + password + "->" + overhead
+  )
 
   return {
     userId,
