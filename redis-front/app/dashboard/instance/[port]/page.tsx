@@ -5,6 +5,7 @@ import Editor from '@monaco-editor/react';
 import fetchInstance, { InstanceResponse, RedisMetrics } from '@/app/actions/fetchinstance';
 import { useParams, useRouter } from 'next/navigation';
 import deleteInstance from '@/app/actions/deleteInstance';
+import AgentChatbot from '@/components/agent';
 
 interface LanguageConfig {
     install: string;
@@ -409,6 +410,7 @@ const InstanceDetail = ({ onBack }: InstanceDetailProps) => {
                                 }}
                             />
                         </div>
+                        <AgentChatbot port={port} password={password} />
                     </div>
                 </div>
             </div>
