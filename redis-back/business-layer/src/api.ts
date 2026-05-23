@@ -192,19 +192,19 @@ app.post("/agent/stream", async (req, res) => {
             
             if (!ai_response) throw new Error("No response from AI");
             
-            message_history.push({ "role": "assistant", "content": ai_response });
+            message_history.push({ "role": "assistant", "content": JSON.stringify(ai_response) });
 
-            let parsed_result;
-            try {
-                const cleaned_response = ai_response.replace(/```json/g, '').replace(/```/g, '').trim();
-                parsed_result = JSON.parse(cleaned_response);
-            } catch (error) {
-                message_history.push({ 
-                    "role": "user", 
-                    "content": "Error: Invalid JSON format. Output ONLY raw JSON." 
-                });
-                continue;
-            }
+            let parsed_result = ai_response;
+            // try {
+            //     const cleaned_response = ai_response.replace(/```json/g, '').replace(/```/g, '').trim();
+            //     parsed_result = JSON.parse(cleaned_response);
+            // } catch (error) {
+            //     message_history.push({ 
+            //         "role": "user", 
+            //         "content": "Error: Invalid JSON format. Output ONLY raw JSON." 
+            //     });
+            //     continue;
+            // }
 
             if (parsed_result.step === "START" || parsed_result.step === "PLAN") {
                 const payload = JSON.stringify({ type: "thought", content: parsed_result.content });
@@ -213,7 +213,7 @@ app.post("/agent/stream", async (req, res) => {
                 continue;
             }
 
-            if (parsed_result.step === "TOOL") {
+            if (parsed_result.step === "TOOL" && parsed_result.tool) {
                 const tool_call = parsed_result.tool;
                 const tool_in = parsed_result.input; 
 

@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 import query from '@redis/service/root/query.js';
+import { z } from 'zod'
+import { zodToJsonSchema } from 'zod-to-json-schema';
 
 const AI = new OpenAI({
     apiKey: process.env.AI_KEY,
@@ -97,11 +99,33 @@ User: What is the Value Of Key hey? (port: 7000, userPass: sjfkslf)
 [OBSERVE arrives]
 {"step": "OUTPUT", "content": "Value of Key 'hey' On Your Instance is '123'."}`;
 
+const ai_response_format = z.object({
+    step : z.enum(["START", "PLAN", "TOOL", "OUTPUT", "OBSERVE"]),
+    content : z.string().optional(),
+    tool : z.string().optional(),
+    input: z.record(z.any()).optional()
+})
+
+// {
+//     step = "START" | "PLAN" | "TOOL" | "OUTPUT" | "OBSERVE",
+//     content : string,
+//     tool : string,
+//     input : {} 
+// }
+
 export const aiQuery = async (message_history: any[]) => {
     const response = await AI.chat.completions.create({
         model: "gemini-3.1-flash-lite-preview",
-        messages: message_history
+        messages: message_history,
+        response_format: {
+            type: "json_schema",
+            json_schema: {
+                name : 'Agent-Response',
+                schema : zodToJsonSchema(ai_response_format)
+            }
+        }
     });
 
-    return response.choices[0]?.message.content;
+    return ai_response_format.parse(JSON.parse(response.choices[0]?.message.content!)
+);;
 };
